@@ -1,0 +1,2030 @@
+/* =========================================================
+   이미지 캐시 버스팅 규칙 — 브라우저가 같은 파일 이름의 이전 버전을
+   캐시해서 계속 보여주는 문제가 여러 번 있었습니다. intro.html/js에서
+   img 폴더의 파일을 참조할 때는 항상 끝에 "?v=N"을 붙이고, 그 이미지의
+   실제 내용을 다시 바꿀 때마다 N을 1씩 올려서 캐시를 강제로 깨뜨립니다
+   (예: hint-card.png?v=1 → 다음에 바뀌면 hint-card.png?v=2).
+   ========================================================= */
+
+/* =========================================================
+   폰트 — Adobe Fonts 키트(frz4spt, "NomenDubium") 연결 완료.
+   아래 4개 변수가 실제 사용하는 서체입니다. Adobe에서 "CSS 복사"로
+   주는 스니펫은 font-family/font-weight/font-style이 함께 묶여 있어서
+   :root 안에 그대로 붙여넣으면 안 되고(커스텀 프로퍼티 값이 아니라
+   :root 자체에 스타일이 걸려버려서 아무 효과가 없었습니다), 아래처럼
+   family 이름만 뽑아서 --font-* 변수 값으로 넣어야 합니다.
+   ========================================================= */
+:root {
+  --font-title-kr:
+    'agchoijeongho-screen', sans-serif; /* AGChoiJeongHo Screen — Regular(400) 만 키트에 있음 */
+  --font-title-en:
+    optique-display, sans-serif; /* Noh Optique Display — 400·700 둘 다 키트에 있음 */
+  --font-body-kr:
+    'agchoijeongho-screen', sans-serif; /* 편지 본문도 동일하게 AGChoiJeongHo Screen 사용 */
+  --font-mono-en:
+    prestige-elite-std, monospace; /* Prestige Elite Std — 4종 스타일 모두 키트에 있음 */
+  --font-letter-kr:
+    "pln-serenity", sans-serif; /* 편지지 본문 전용 — 같은 키트(frz4spt)에 새로 추가된 서체, 편지 화면(.letter-text)에만 적용 */
+  --font-pretendard:
+    "pretendard", sans-serif; /* 기본 정보 카드의 굵은 라벨(분류ㅣ상태ㅣ서식지)에 쓰는 폰트.
+    같은 Adobe Fonts 키트(frz4spt)에 방금 추가하셨다고 해서 별도 임베드 없이
+    이 변수 값만 맞추면 됩니다 — 위 4개 폰트와 마찬가지로 Adobe Fonts 키트
+    편집 페이지 > 이 폰트 선택 > "웹 프로젝트에 추가"에서 나오는 정확한
+    "CSS 이름"을 확인해서 넣어주세요. 지금은 "pretendard"로 추측해 뒀습니다. */
+
+  --ground: #0b0a08;
+  --paper: #ece6d8;
+  --ink: #000000;
+  /* 메인 포인트 레드 — 피그마 원본(게이트 타이틀 7:3522, Who am I
+     7:4934/7:6333, 상단 프로젝트명 7:6335 모두 동일하게 #c42229)을
+     그대로 확인해서 맞췄습니다. 기존 --blood(#7a1620), --title-color
+     (#e20710)는 둘 다 추측치였고 실제보다 어둡고 탁했습니다. */
+  --blood: #c42229;
+  --blood-bright: #c9333f;
+  /* "문제 진행률" 라벨 · n/18 카운트 전용 색상 — 피그마 실측값(#c51a08),
+     기존 --blood과는 미세하게 다른 톤이라 별도 변수로 뺐습니다. */
+  --progress-red: #c51a08;
+  --title-color: #c42229;
+  --brass: #7c8084;
+  --brass-rgb:
+    124, 128, 132; /* --brass와 같은 색의 R,G,B — 테두리 등에서 알파값 줄 때 사용 */
+  --mist: #c8c0b3;
+  --mist-dim: #8c8478;
+}
+
+* {
+  box-sizing: border-box;
+}
+html,
+body {
+  height: 100%;
+}
+body {
+  margin: 0;
+  background: var(--ground);
+  color: var(--mist);
+  font-family: var(--font-body-kr);
+  -webkit-font-smoothing: antialiased;
+  /* 텍스트·이미지를 드래그로 긁듯 선택할 때마다 커서가 빔/드래그 모양으로
+     바뀌는 게 거슬린다는 피드백 반영 — 사이트 전체에서 텍스트 선택과
+     이미지 드래그를 막고, 기본 커서를 고정합니다. 이름 입력칸(#gateName)
+     등 실제로 타이핑/선택이 필요한 요소는 아래에서 다시 풀어줍니다. */
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  user-select: none;
+  -webkit-touch-callout: none;
+  cursor: default;
+}
+input,
+textarea {
+  -webkit-user-select: text;
+  -moz-user-select: text;
+  user-select: text;
+}
+img {
+  -webkit-user-drag: none;
+  user-drag: none;
+}
+
+.stage {
+  position: relative;
+  width: 100vw;
+  height: 100vh;
+  height: 100dvh;
+  overflow: hidden;
+  background: var(--ground);
+  /* .replay(HOME 버튼)이 .scene 밖(= .stage 바로 아래)에 있어서
+     cqw 단위를 쓰려면 .stage 자체도 컨테이너로 지정해야 합니다.
+     .scene은 항상 .stage와 같은 크기(inset:0)라서 값은 동일합니다. */
+  container-type: inline-size;
+}
+
+/* 화면을 항상 뷰포트 전체(엣지투엣지)로 채웁니다 — 어떤 화면비에서도
+   레터박싱(검은 여백)이 생기지 않습니다. 예전에는 3:2 비율 "핏 박스"로
+   고정해서 사진·버튼 위치를 지켰지만, 화면비가 3:2가 아니면(예: 16:9
+   모니터) 박스 밖으로 검은 여백이 남는 문제가 있었습니다.
+   지금은 배경 사진(.scene-bg)이 object-fit:cover로 화면을 꽉 채우면서
+   화면비에 따라 위/아래(또는 좌/우) 일부가 살짝 잘려나갑니다. 그 대신
+   사진 속 특정 지점(봉인 위치, 편지지 영역 등)에 맞춰야 하는 버튼/텍스트는
+   js/intro.js의 getImageFit()/placeOnImage()가 실제 크롭 결과에 맞춰
+   화면비가 바뀔 때마다 다시 계산해서 배치합니다 — 자세한 내용은
+   js/intro.js 쪽 주석 참고. */
+.scene {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.5s ease;
+  container-type: inline-size;
+}
+.scene.is-active {
+  opacity: 1;
+  visibility: visible;
+}
+.scene-bg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center;
+  display: block;
+  transform-origin: 51.8% 83.5%;
+  transition: transform 1.1s cubic-bezier(0.65, 0, 0.35, 1);
+}
+.stage.is-transitioning .scene-2 .scene-bg {
+  transform: scale(2.6);
+}
+
+/* ===== 타이틀 블록 =====
+   비네트(title-wrap::before)와 위아래 황동색 룰라인(title-rule)은 유지 중입니다.
+   영/한 폰트를 분리하고 크기 위계를 주는 실험은 레이너스 요청으로 되돌렸습니다 —
+   한글이 자기 폰트(AGChoiJeongHo Screen) 대신 영문 폰트(Optique Display)를
+   그대로 쓰는 것은 기술적으로는 어긋나 보이지만 의도된 선택이라고 하셔서,
+   기존처럼 .scene-title 전체가 --font-title-en을 쓰고 .title-kr은 크기만
+   0.88em으로 보정하는 방식으로 복구했습니다. 로드인 애니메이션도 제거했습니다. */
+.title-wrap {
+  position: absolute;
+  top: 39%;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.9cqw;
+  z-index: 1;
+  opacity: 1;
+  transition: opacity 1.4s ease;
+}
+.gate.is-leaving .title-wrap {
+  opacity: 0;
+}
+.title-wrap::before {
+  content: '';
+  position: absolute;
+  inset: -60% -14%;
+  background: radial-gradient(
+    ellipse 60% 80% at 50% 50%,
+    rgba(0, 0, 0, 0.55) 0%,
+    rgba(0, 0, 0, 0.24) 48%,
+    rgba(0, 0, 0, 0) 78%
+  );
+  pointer-events: none;
+  z-index: 0;
+}
+.title-rule {
+  position: relative;
+  z-index: 1;
+  display: block;
+  height: 1px;
+  width: 44%;
+  background: linear-gradient(to right, transparent, #7c8084, transparent);
+  opacity: 0.7;
+}
+.scene-title {
+  position: relative;
+  z-index: 1;
+  margin: 0;
+  white-space: nowrap;
+  text-align: center;
+  font-family: var(--font-title-en);
+  font-weight: 700;
+  font-size: clamp(108.9px, 6.3cqw, 161.3px);
+  color: var(--title-color);
+  letter-spacing: 0.01em;
+  text-shadow:
+    0 4px 10px rgba(0, 0, 0, 0.85),
+    0 1px 3px rgba(0, 0, 0, 0.8),
+    0 0 26px rgba(226, 7, 16, 0.28);
+}
+.title-en {
+  font-family: var(--font-title-en);
+}
+.title-kr {
+  /* 의도적으로 영문 폰트(--font-title-en)를 그대로 사용 — 크기만 보정 */
+  font-family: var(--font-title-en);
+  font-size: 0.88em;
+}
+
+/* ===== 이름 입력 게이트 =====
+   처음 진입 시 배경을 어둡게 깔고, 타이틀과 이름 입력 폼을 보여줍니다.
+   .stage에 pre-gate 클래스가 있는 동안에는 실링 왁스도 클릭이 막혀있고,
+   이름을 제출하면 게이트가 페이드아웃되면서 우리가 만든 홈화면(타이틀 없이)
+   그대로 드러납니다.
+   타이틀·입력창(title-wrap, gate-form)과 어둠(gate-scrim)의 페이드아웃
+   속도를 서로 다르게 주기 위해, 예전처럼 .gate 전체에 opacity를 걸지 않고
+   각자 따로 트랜지션을 겁니다 — 어둠이 더 오래 남아있도록. */
+.gate {
+  position: absolute;
+  inset: 0;
+  z-index: 5;
+}
+.gate.is-leaving {
+  pointer-events: none;
+}
+.gate[hidden] {
+  display: none;
+}
+.gate-scrim {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.55);
+  opacity: 1;
+  transition: opacity 1.7s ease;
+  z-index: 0;
+}
+.gate.is-leaving .gate-scrim {
+  opacity: 0;
+}
+.gate-form {
+  position: absolute;
+  left: 50%;
+  top: 65%;
+  transform: translate(-50%, -50%);
+  /* width:34% + min-width:260px였을 때, .scene이 조금만 작아져도(특히
+     세로 폭이 좁아질 때 .scene 자체가 fit-box라 확 줄어듦) min-width가
+     비율을 무시하고 우선 적용되면서 패널이 장면 대비 거대해 보였습니다.
+     고정 px 최소값 대신 clamp(...cqw...) 하나로 통일해서 .scene 크기에
+     맞춰 부드럽게 줄고 늘어나게 했습니다. padding/gap도 같은 이유로
+     cqw 기반으로 바꿨습니다. */
+  width: clamp(420.0px, 24.31cqw, 622.2px);
+  display: flex;
+  flex-direction: column;
+  gap: clamp(16.0px, 0.93cqw, 23.7px);
+  background: rgba(15, 13, 11, 0.94);
+  border: 1px solid var(--brass);
+  border-radius: 4px;
+  padding: clamp(22.0px, 1.27cqw, 32.6px) clamp(26.0px, 1.50cqw, 38.5px);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
+  z-index: 1;
+  opacity: 1;
+  transition: opacity 1.4s ease;
+}
+.gate.is-leaving .gate-form {
+  opacity: 0;
+}
+.gate-label {
+  margin: 0;
+  color: var(--paper);
+  font-family: var(--font-title-kr);
+  font-size: clamp(18.0px, 1.04cqw, 26.7px);
+  letter-spacing: 0.02em;
+  text-align: center;
+}
+.gate-row {
+  display: flex;
+  gap: clamp(10.0px, 0.58cqw, 14.8px);
+}
+.gate-input {
+  flex: 1;
+  min-width: 0;
+  background: rgba(236, 230, 216, 0.08);
+  border: 1px solid rgba(var(--brass-rgb), 0.45);
+  border-radius: 4px;
+  padding: clamp(11.0px, 0.64cqw, 16.3px) clamp(13.0px, 0.75cqw, 19.3px);
+  color: var(--paper);
+  font-family: var(--font-body-kr);
+  font-size: clamp(17.0px, 0.98cqw, 25.2px);
+  outline: none;
+  transition: border-color 0.15s ease;
+}
+.gate-input::placeholder {
+  color: var(--mist-dim);
+}
+.gate-input:focus {
+  border-color: var(--brass);
+}
+.gate-submit {
+  background: rgba(15, 13, 11, 0.94);
+  border: 1px solid var(--brass);
+  border-radius: 4px;
+  color: var(--paper);
+  font-family: var(--font-title-kr);
+  font-size: clamp(17.0px, 0.98cqw, 25.2px);
+  padding: clamp(11.0px, 0.64cqw, 16.3px) clamp(20.0px, 1.16cqw, 29.6px);
+  cursor: pointer;
+  transition:
+    border-color 0.15s ease,
+    box-shadow 0.15s ease;
+}
+.gate-submit:hover {
+  border-color: var(--blood-bright);
+}
+.gate-submit:focus-visible {
+  outline: 2px solid var(--brass);
+  outline-offset: 2px;
+}
+.gate-input:focus-visible {
+  outline: none;
+}
+
+/* 게이트가 떠 있는 동안(pre-gate)에는 실링 왁스를 미리 클릭할 수 없게 막고,
+   펄스 링도 아예 안 보이게 합니다. (visibility를 쓴 이유: opacity는
+   pulse-ring 애니메이션이 계속 자체적으로 값을 바꾸기 때문에 그냥
+   opacity:0을 주면 애니메이션 도중 다시 보였다 안 보였다 할 수 있음) */
+.stage.pre-gate .seal-hotspot {
+  pointer-events: none;
+}
+.stage.pre-gate .seal-ring {
+  visibility: hidden;
+}
+
+/* 봉인 클릭 지점 — 항상 은은하게 펄스, 호버 시 태그 노출.
+   히트박스(.seal-hotspot 자체 크기)와 눈에 보이는 링(.seal-ring)을
+   분리했습니다: 보이는 링은 --seal-size 기준 2.5배 크기에서 애니메이션으로
+   최대 1.8배까지 더 부풀었다 사라지는데(= 최대 2.5*1.8 = 4.5배),
+   클릭/호버 인식 범위도 정확히 그 최댓값(4.5배)만큼 넓혀서 링이 다 자라난
+   순간뿐 아니라 항상 그 범위 전체를 클릭/호버할 수 있게 했습니다. */
+.seal-hotspot {
+  --seal-size: clamp(30px, 9cqw, 64px); /* 기존 히트박스 크기 — 링 크기 계산의 기준 */
+  position: absolute;
+  left: 51.8%;
+  top: 83.5%;
+  transform: translate(-50%, -50%);
+  width: calc(var(--seal-size) * 4.5);
+  height: calc(var(--seal-size) * 4.5);
+  border: 0;
+  background: transparent;
+  padding: 0;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.seal-ring {
+  position: absolute;
+  /* --seal-size 기준으로 고정 계산 — .seal-hotspot 자체가 커져도(위 4.5배)
+     링 크기는 그것과 무관하게 항상 --seal-size의 2.5배로 유지됩니다.
+     top/bottom/left/right는 .seal-hotspot(4.5*--seal-size) 안에서 이 링을
+     중앙 정렬하되, 실링 왁스 이미지와 맞추려고 살짝 오른쪽으로 옮긴 값입니다. */
+  top: calc(var(--seal-size) * 1);
+  bottom: calc(var(--seal-size) * 1);
+  left: calc(var(--seal-size) * 1.15);
+  right: calc(var(--seal-size) * 0.85);
+  pointer-events: none; /* 클릭/호버 판정은 .seal-hotspot 하나로만 처리 */
+  /* 단색 면 채우기 대신 중심에서 바깥으로 갈수록 투명해지는 그라디언트 —
+     원 가장자리가 또렷한 선(스트로크)처럼 보이는 착시를 없애줍니다 */
+  background: radial-gradient(
+    circle,
+    rgba(216, 16, 24, 0.72) 0%,
+    rgba(216, 16, 24, 0.4) 55%,
+    rgba(216, 16, 24, 0) 100%
+  );
+  border-radius: 50%;
+  animation: pulse-ring 2.6s ease-out infinite;
+}
+.seal-ring.ring-b {
+  animation-delay: 1.3s;
+}
+@keyframes pulse-ring {
+  0% {
+    transform: scale(0.75);
+    opacity: 0.85;
+  }
+  75% {
+    transform: scale(1.8);
+    opacity: 0;
+  }
+  100% {
+    transform: scale(1.8);
+    opacity: 0;
+  }
+}
+/* "편지 확인하기" 텍스트 라벨(.seal-tag) — 예전에는 HOME·수락하기와 같은
+   패널+테두리 UI로 항상 떠 있어서, 자기 자신은 호버 반응이 없는
+   "가짜 버튼"처럼 보이는 문제가 있었습니다. 이번에는 패널 없이 실버색
+   텍스트만 두고, 평소엔 숨겨뒀다가 펄스 링에 마우스를 올렸을 때(호버·
+   포커스)만 은은하게 떠오르게 했습니다 — 진짜 버튼(패널 UI)과 겹치지
+   않으면서, 클릭 지점을 알려주는 보조 캡션 역할만 합니다. */
+.seal-tag {
+  position: absolute;
+  left: calc(50% + var(--seal-size) * 0.22);
+  /* 레이너스가 스크린샷으로 직접 짚어준 위치 — 펄스 링이 은은하게 번지는
+     구간(명패 아래 ~ 실링 왁스 위) 안쪽에 겹쳐 뜨도록 hotspot 위쪽 기준
+     top을 잡았습니다. 이후 "약간 더 위로, 약간 오른쪽으로" 요청으로
+     top을 살짝 줄이고 left에 오른쪽 오프셋을 더했습니다. */
+  top: calc(var(--seal-size) * 1.2);
+  transform: translate(-50%, 0);
+  white-space: nowrap;
+  /* 책상 표면이 밝을 때는 실버 글자만으로 대비가 부족해서, 테두리 없는
+     어두운 반투명 알약 배경을 깔아 어떤 사진 위에서도 읽히게 했습니다.
+     HOME·수락하기처럼 황동 테두리를 두르지 않아서 "가짜 버튼"으로
+     보이지 않습니다. */
+  background: rgba(10, 9, 8, 0.62);
+  backdrop-filter: blur(2px);
+  -webkit-backdrop-filter: blur(2px);
+  border-radius: 999px;
+  padding: 0.35em 0.9em;
+  color: #e4e6ea; /* 실버 톤 — 기존 --brass/--mist보다 차갑고 밝은 회색 */
+  font-family: var(--font-title-kr);
+  font-size: clamp(18.0px, 1.16cqw, 27.6px);
+  letter-spacing: 0.03em;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.6);
+  opacity: 0;
+  pointer-events: none;
+  transition:
+    opacity 0.2s ease,
+    transform 0.2s ease;
+}
+.seal-hotspot:hover .seal-tag,
+.seal-hotspot:focus-visible .seal-tag {
+  opacity: 1;
+  transform: translate(-50%, 6px);
+}
+.seal-hotspot:hover .seal-ring,
+.seal-hotspot:focus-visible .seal-ring {
+  /* 애니메이션은 멈추지 않고 계속 펄스 — 색상만 더 짙고 진하게 (그라디언트 유지) */
+  background: radial-gradient(
+    circle,
+    rgba(140, 30, 8, 0.92) 0%,
+    rgba(140, 30, 8, 0.55) 55%,
+    rgba(140, 30, 8, 0) 100%
+  );
+}
+.seal-hotspot:focus-visible {
+  outline: 2px solid var(--brass);
+  outline-offset: 6px;
+  border-radius: 50%;
+}
+
+/* 편지 본문 — 가독성 위해 완전 블랙 */
+.letter-text {
+  position: absolute;
+  left: 32%;
+  top: 13%;
+  width: 32%;
+  height: 68%;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  /* 본문·인사말 폰트를 1pt 키우면서 전체 블록이 살짝 길어져, 기준
+     화면에서 아래 "수락하기" 버튼·서명 줄과 맞닿는 문제가 있었습니다
+     — 문단 사이 간격을 조금 줄여서 다시 여유를 확보했습니다. */
+  gap: 0.55em;
+  color: var(--ink);
+  font-family: var(--font-letter-kr);
+  font-weight: 400;
+  font-style: normal;
+  font-size: clamp(20.0px, 1.15cqw, 29.5px);
+  line-height: 1.78;
+  /* 새 편지지 배경(letter-bg-bright.jpg)은 카드가 거의 정면으로 서 있어서
+     이전 사진(6deg 기울기)에 맞췄던 회전이 더 이상 필요 없습니다. */
+  /* pln-serenity는 획이 가늘어서 본문 길이로 쓰면 가독성이 떨어집니다.
+     서체 자체는 그대로 두고, 글자 획에 아주 얇은 외곽선(-webkit-text-stroke)을
+     더해 굵기를 살짝 보강하고, 자간·어간을 넓혀서 글자가 서로 들러붙어
+     보이지 않게 했습니다. line-height도 1.68→1.78로 늘려 줄 간 여유를 더 줬습니다. */
+  letter-spacing: 0.02em;
+  word-spacing: 0.06em;
+  /* 이전(0.45px)보다 약하게 다시 적용 */
+  -webkit-text-stroke: 0.3px var(--ink);
+  /* 편지지 조명이 균일하지 않아서(왼쪽 위 밝음 → 오른쪽 아래 어두움)
+     backdrop-filter만으로는 서명 쪽까지 고르게 밝히기 어려웠습니다.
+     대신 글자 자체에 종이색(--paper) 톤의 은은한 광원을 둘러서, 뒤 배경이
+     얼마나 어둡든 상관없이 검은 글씨와의 경계 대비를 항상 확보합니다. */
+  /* 세기를 키워본 건 원하시던 효과가 아니어서 원래 값으로 되돌림 */
+  text-shadow:
+    0 0 3px rgba(255, 255, 255, 0.9),
+    0 0 8px rgba(255, 255, 255, 0.65),
+    0 0 16px rgba(255, 255, 255, 0.4);
+}
+/* 편지지 사진 자체의 조명이 왼쪽 위에서 오른쪽 아래로 갈수록 어두워져서,
+   텍스트가 편지지 외곽(특히 서명 쪽)으로 갈수록 잘 안 보였습니다.
+   텍스트 영역 뒤쪽만 backdrop-filter로 살짝 밝히고, mask로 가장자리를
+   부드럽게 페더링해서 네모난 조명 박스처럼 티 나지 않게 했습니다.
+   (::before는 텍스트보다 먼저 그려지는 자식이라 실제 글자 뒤에 깔립니다.) */
+.letter-text::before {
+  content: "";
+  position: absolute;
+  /* 레이너스 요청으로 편지지 바깥(봉투 방향)까지 번지는 걸 허용하기로 해서,
+     오른쪽을 묶어뒀던 제한을 풀고 사방으로 넉넉하게 여백을 키웠습니다.
+     타원도 100%로 키우고, 중심도 다시 텍스트 중앙(50% 50%)으로 되돌렸습니다. */
+  inset: -45% -35%;
+  backdrop-filter: brightness(1.35);
+  -webkit-backdrop-filter: brightness(1.35);
+  /* 타원(반경 90%)이 박스 가장자리(반경의 약 55.6% 지점)에 닿기 전에
+     완전히 투명해지도록, 마지막 stop을 48%로 맞췄습니다. */
+  mask-image: radial-gradient(
+    ellipse 90% 90% at 50% 50%,
+    rgba(0, 0, 0, 1) 14%,
+    rgba(0, 0, 0, 0.8) 22%,
+    rgba(0, 0, 0, 0.55) 29%,
+    rgba(0, 0, 0, 0.3) 36%,
+    rgba(0, 0, 0, 0.12) 42%,
+    rgba(0, 0, 0, 0) 48%
+  );
+  -webkit-mask-image: radial-gradient(
+    ellipse 90% 90% at 50% 50%,
+    rgba(0, 0, 0, 1) 14%,
+    rgba(0, 0, 0, 0.8) 22%,
+    rgba(0, 0, 0, 0.55) 29%,
+    rgba(0, 0, 0, 0.3) 36%,
+    rgba(0, 0, 0, 0.12) 42%,
+    rgba(0, 0, 0, 0) 48%
+  );
+  pointer-events: none;
+}
+.letter-text p {
+  position: relative;
+  margin: 0;
+  /* 본문(라벨 없는 문단 3개)만 1pt 키움 — .greet/.sign은 아래 더
+     구체적인 선택자가 따로 적용되므로 여기 영향받지 않습니다. */
+  font-size: calc(1em + 1pt);
+}
+.letter-text .greet {
+  /* 인사말("안녕하세요 ~~ 박사님,")도 본문과 함께 1pt 키움 — 기존
+     1.15em 비율은 그대로 유지한 채 그 위에 1pt를 더합니다. */
+  font-size: calc(1.15em + 1pt);
+}
+.letter-text .sign {
+  /* 서명 줄은 이번 요청 대상이 아니라 기존 크기(1.15em) 그대로 둡니다. */
+  font-size: 1.15em;
+}
+.letter-text .sign {
+  margin-top: 0.4em;
+  text-align: right;
+  color: var(--ink);
+}
+
+/* 수락 버튼 — "편지 확인하기" 태그와 동일한 디자인으로 통일 */
+.accept-tag {
+  position: absolute;
+  left: 75%;
+  top: 80%;
+  transform: translate(-50%, -50%);
+  white-space: nowrap;
+  background: rgba(15, 13, 11, 0.94);
+  border: 1px solid var(--brass);
+  color: var(--paper);
+  font-family: var(--font-title-kr);
+  font-size: clamp(20.0px, 1.16cqw, 29.6px);
+  letter-spacing: 0.04em;
+  padding: 10px 20px;
+  border-radius: 4px;
+  text-decoration: none;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.5);
+  transition:
+    transform 0.15s ease,
+    border-color 0.15s ease,
+    box-shadow 0.15s ease;
+}
+.accept-tag:hover {
+  transform: translate(-50%, -50%) scale(1.06);
+  border-color: var(--blood-bright);
+  box-shadow: 0 10px 26px rgba(0, 0, 0, 0.6);
+}
+.accept-tag:focus-visible {
+  outline: 2px solid var(--brass);
+  outline-offset: 4px;
+}
+
+/* ===== 화면 3: Who am I (신원 확인 명패) =====
+   앞선 게이트 타이틀과 같은 톤(title-rule + scene-title)을 그대로 가져오되,
+   배경 사진 없이 어두운 무대 위에 명패 카드(id-card) 하나로만 구성해서
+   "잠깐 멈춰 서서 신원을 확인받는" 느낌을 냅니다. 카드 테두리·버튼은
+   .gate-form/.accept-tag와 같은 황동 톤이라 앞뒤 화면과 분위기가 이어집니다. */
+.scene-4 {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.scene-4::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  background: radial-gradient(
+    ellipse 55% 60% at 50% 50%,
+    rgba(0, 0, 0, 0.5) 0%,
+    rgba(0, 0, 0, 0.18) 55%,
+    rgba(0, 0, 0, 0) 80%
+  );
+  pointer-events: none;
+}
+/* 화면 5(연구 완료) — scene-4와 같은 가운데 정렬 + 어두운 비네트
+   구성이지만, 배경이 검정 무대가 아니라 표본실 사진(.scene-bg)이라
+   사진 위에서도 카드 글자가 잘 읽히도록 같은 비네트를 그대로 씌웁니다. */
+.scene-6 {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.scene-6::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  /* scene-4::before는 z-index:0으로 충분했지만(뒤에 사진이 없는 검정
+     무대라서), scene-6은 .scene-bg 사진(z-index:auto → 사실상 0)이
+     같은 묶음에서 ::before보다 DOM 순서상 뒤에 있어 그 위에 그려져
+     버려서 어둠 레이어가 사진에 가려 안 보이는 문제가 있었습니다.
+     z-index를 1로 올려 사진 위, 척추/명패(z-index 1·2)와는 기존
+     순서를 유지하도록 했습니다. */
+  z-index: 1;
+  /* 표본실 사진 배경이 scene-4의 검정 무대보다 훨씬 산만해서, 카드
+     주변만 어두워지는 비네트만으로는 사진과 글자가 서로 경쟁해 보였습니다.
+     화면 전체를 덮는 평평한 어둠(첫 레이어)을 깔고, 그 위에 카드
+     중심부를 한 번 더 눌러주는 비네트(둘째 레이어)를 겹쳐서 사진과
+     텍스트가 분리되도록 했습니다. 처음엔 너무 어두워서 사진이 거의
+     안 보인다는 피드백을 받아 알파값을 전체적으로 낮췄습니다. */
+  background: linear-gradient(rgba(0, 0, 0, 0.3), rgba(0, 0, 0, 0.3)),
+    radial-gradient(
+      ellipse 70% 75% at 50% 50%,
+      rgba(0, 0, 0, 0.58) 0%,
+      rgba(0, 0, 0, 0.4) 55%,
+      rgba(0, 0, 0, 0.22) 80%,
+      rgba(0, 0, 0, 0.1) 100%
+    );
+  pointer-events: none;
+}
+/* 배경(검정 무대 + 위 비네트)과 명패의 원형 그라디언트 "사이"에 놓이는
+   레이너스가 준 척추 라인아트. 원래 알파값이 낮은(최대 44%) 이미지라
+   그 자체로 이미 은은해서 opacity는 거의 건드리지 않았습니다. */
+.who-spine {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 50%;
+  /* .id-card와 같은 양만큼 살짝 아래로 내려서 함께 내려간 것처럼 보이게 */
+  transform: translateY(calc(-50% + clamp(24.0px, 1.4cqw, 40.0px)));
+  width: 100%;
+  height: auto;
+  z-index: 1;
+  pointer-events: none;
+}
+.id-card {
+  /* 사각형 패널 하나로 폭·원 지름을 같이 맞추기 위한 변수 */
+  --id-card-size: clamp(560.0px, 32.41cqw, 829.6px);
+  position: relative;
+  /* 화면 정중앙보다 살짝 아래로 내려서 보여달라는 피드백 반영 */
+  top: clamp(24.0px, 1.4cqw, 40.0px);
+  z-index: 2; /* 척추 라인아트(.who-spine, z-index:1)보다 위에 오도록 */
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: clamp(16.0px, 0.93cqw, 23.7px);
+  width: var(--id-card-size);
+  padding: clamp(56.0px, 3.24cqw, 83.0px) clamp(48.0px, 2.78cqw, 71.1px);
+  text-align: center;
+}
+/* 사각형(배경+테두리+그림자) 대신, 가운데서 바깥으로 갈수록 투명해지는
+   원형 블랙 그라디언트를 카드 콘텐츠 뒤에 깔아둡니다. 정사각형(너비=높이)
+   위에 원형 그라디언트를 그려서 이전 사각형과 비슷한 크기를 유지하면서도
+   확실히 "원"으로 보이게 했습니다. (지금은 무대 배경도 검정이라 육안으로는
+   거의 티가 안 나지만, 추후 다른 요청을 위한 사전 작업이라고 하셔서
+   우선 구조만 바꿔둡니다.) */
+.id-card::before {
+  content: "";
+  position: absolute;
+  z-index: -1;
+  left: 50%;
+  top: 50%;
+  width: var(--id-card-size);
+  height: var(--id-card-size);
+  transform: translate(-50%, -50%);
+  /* circle(기본값=farthest-corner)로 두면 정사각형 박스의 "변 중앙"이
+     대각선 모서리보다 훨씬 가까워서, 100% 지점(완전 투명)에 못 미친 채로
+     박스 테두리에서 뚝 끊겨 보였습니다(사용자가 지적한 경계선). closest-side를
+     써서 반지름을 박스의 변까지 거리로 맞추면, 딱 박스 가장자리에서
+     알파값이 정확히 0에 도달해 끊김 없이 자연스럽게 사라집니다. */
+  background: radial-gradient(
+    circle closest-side,
+    rgba(0, 0, 0, 0.9) 0%,
+    rgba(0, 0, 0, 0.55) 45%,
+    rgba(0, 0, 0, 0) 100%
+  );
+  pointer-events: none;
+}
+.id-card-eyebrow {
+  font-family: var(--font-mono-en);
+  font-size: clamp(14.7px, calc(0.69cqw + 2.7px), 20.5px); /* 기존보다 2pt(~2.7px) 크게 */
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--mist-dim);
+}
+.id-card .title-rule {
+  width: 56%;
+}
+.id-card-title {
+  font-size: clamp(74.7px, calc(4.17cqw + 2.7px), 109.4px); /* 기존보다 2pt(~2.7px) 크게 */
+}
+/* scene-6(연구 완료) 전용 — 정답률(예: "정답률 83%")을 "Complete" 타이틀
+   위에 작은 뱃지로 얹어줍니다. 빈 문자열일 때(scene-6이 아닌 다른
+   화면)는 그냥 아무것도 차지하지 않도록 :empty로 감춥니다. */
+.id-card-rank {
+  margin: 0;
+  display: inline-block;
+  border: 1px solid var(--brass);
+  border-radius: 999px;
+  padding: clamp(5.0px, 0.3cqw, 8.0px) clamp(16.0px, 0.93cqw, 23.7px);
+  color: var(--paper);
+  font-family: var(--font-title-kr);
+  font-size: clamp(14.0px, 0.75cqw, 18.5px);
+  letter-spacing: 0.06em;
+}
+.id-card-rank:empty {
+  display: none;
+}
+.id-card-text {
+  margin: 0;
+  /* 위쪽 룰라인·타이틀과의 간격은 유지한 채, 이 텍스트 덩어리(두 문장)만
+     살짝 아래로 내리기 위한 여백 */
+  margin-top: clamp(14.0px, 0.81cqw, 20.7px);
+  color: var(--paper);
+  font-family: var(--font-body-kr);
+  font-size: clamp(19.7px, calc(0.98cqw + 2.7px), 27.9px); /* 기존보다 2pt(~2.7px) 크게 */
+  line-height: 1.6;
+  /* 단어 중간이 아니라 띄어쓰기 단위로만 줄바꿈되게 합니다. */
+  word-break: keep-all;
+}
+/* scene-6(연구 완료) 첫 문장 — "18개 표본 ... 박사님!"이 이름 길이에 따라
+   애매한 지점에서 줄바꿈되어 어색해 보인다는 피드백 반영. 이름이 들어가도
+   한 줄에 다 들어가도록 줄바꿈을 막고, 혹시 카드보다 넓어지는 경우에는
+   글자 크기를 살짝 줄여 한 줄을 유지합니다. */
+.id-card-text-oneline {
+  white-space: nowrap;
+  font-size: clamp(16.0px, calc(0.98cqw + 2.7px), 27.9px);
+}
+.id-card-sub {
+  color: var(--mist-dim);
+  font-size: clamp(17.7px, calc(0.87cqw + 2.7px), 24.9px); /* 기존보다 2pt(~2.7px) 크게 */
+  /* .id-card 전체에 걸린 flex gap과는 별개로, 이 두 문장 사이 간격만
+     살짝 줄이기 위해 음수 margin으로 당겨줍니다 */
+  margin-top: clamp(-20.7px, -0.81cqw, -14.0px);
+}
+/* scene-6(연구 완료) 전용 — 두 문장 사이 간격이 너무 좁다는 피드백
+   반영. scene-4(신원 확인)의 짧은 인사말 간격은 그대로 두고, scene-6만
+   음수 마진을 걷어내고 살짝 더 벌렸습니다. */
+.scene-6 .id-card-sub {
+  margin-top: clamp(4.0px, 0.3cqw, 10.0px);
+}
+.id-card-btn {
+  margin-top: clamp(24.0px, 1.39cqw, 35.6px);
+  background: rgba(15, 13, 11, 0.94);
+  border: 1px solid var(--brass);
+  color: var(--paper);
+  font-family: var(--font-title-kr);
+  font-size: clamp(18.0px, 1.04cqw, 26.7px);
+  letter-spacing: 0.04em;
+  padding: clamp(12.0px, 0.69cqw, 17.8px) clamp(32.0px, 1.85cqw, 47.4px);
+  border-radius: 4px;
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.5);
+  transition:
+    transform 0.15s ease,
+    border-color 0.15s ease,
+    box-shadow 0.15s ease;
+}
+.id-card-btn:hover {
+  transform: scale(1.06);
+  border-color: var(--blood-bright);
+  box-shadow: 0 10px 26px rgba(0, 0, 0, 0.6);
+}
+.id-card-btn:focus-visible {
+  outline: 2px solid var(--brass);
+  outline-offset: 4px;
+}
+/* scene-6(연구 완료) 전용 — "표본실로 돌아가기"와 "컬렉션" 두 버튼을
+   나란히 두기 위한 줄. 기존 .id-card-btn의 margin-top(다른 화면의
+   단독 버튼용)은 이 줄 쪽으로 옮기고, 줄 안의 버튼은 0으로 되돌립니다. */
+.id-card-btn-row {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: clamp(14.0px, 0.81cqw, 20.7px);
+  margin-top: clamp(24.0px, 1.39cqw, 35.6px);
+}
+.id-card-btn-row .id-card-btn {
+  margin-top: 0;
+}
+
+.flash {
+  position: absolute;
+  inset: 0;
+  background: #f4efe4;
+  opacity: 0;
+  pointer-events: none;
+}
+.stage.is-transitioning .flash {
+  animation: flash-pulse 1.1s ease-in-out forwards;
+}
+@keyframes flash-pulse {
+  0% {
+    opacity: 0;
+  }
+  62% {
+    opacity: 0;
+  }
+  78% {
+    opacity: 0.9;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+
+/* HOME 버튼 — 표본실(타이틀) 화면으로 되돌아감. 배경에 묻히지 않도록 불투명한 패널로 */
+.replay {
+  position: absolute;
+  top: clamp(18.0px, 1.0417cqw, 26.7px);
+  left: clamp(18.0px, 1.0417cqw, 26.7px);
+  background: rgba(20, 17, 14, 0.88);
+  border: 1px solid rgba(233, 222, 199, 0.4);
+  border-radius: 4px;
+  color: var(--mist);
+  font-family: var(--font-title-kr);
+  font-size: clamp(16.0px, 0.9259cqw, 23.7px);
+  letter-spacing: 0.03em;
+  padding: clamp(7.0px, 0.4051cqw, 10.4px) clamp(14.0px, 0.8102cqw, 20.7px);
+  cursor: pointer;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+  transition:
+    border-color 0.2s ease,
+    color 0.2s ease,
+    background 0.2s ease;
+}
+.replay:hover {
+  border-color: var(--brass);
+  color: var(--paper);
+  background: rgba(30, 25, 20, 0.95);
+}
+.replay[hidden] {
+  display: none;
+}
+
+/* ===== 화면 4: 문제 (Who am I 퀴즈 핵심 화면) =====
+   레이너스가 공유해준 피그마 시안(LdqvECfYzRq3XoqcmiygnW)을 보고 다시
+   짠 구조입니다. 표본실 안내문(scene2~4)과 달리 이 화면은 밝은 표본지
+   톤 배경이고, 왼쪽 정보 카드는 정답을 맞히기 전부터 단서로 항상
+   노출되어 있습니다. 정답을 고르면 가운데 표본 사진(.specimen-card)
+   자리만 정답 공개 카드(.reveal-card)로 바뀌고, 나머지(정보 카드·
+   힌트·후보 목록·진행바)는 화면에 그대로 남아있습니다.
+   지금은 07.BLC-03(수리부엉이) 표본 하나로만 채워둔 확인용입니다. */
+:root {
+  /* 피그마 시안(Desktop - 40, node 7:4937) 원본 배경값 그대로 */
+  --quiz-bg: #f7f6ee;
+  --quiz-card: #efeade;
+  --quiz-ink: #221f1a;
+  --quiz-ink-dim: #6b6558;
+}
+.scene-5 {
+  display: flex;
+  flex-direction: column;
+  /* 피그마 시안에 쓰인 watercolor-paper-texture 1 이미지를 배경에 깔고,
+     레이너스가 준 배경색(--quiz-bg) 위에 multiply로 얹어서 종이 질감만
+     자연스럽게 살아나게 했습니다(이미지 자체 톤에 좌우되지 않도록).
+     "너무 뭉쳐 보인다"는 피드백 반영 — 희석(반투명 층) 대신 타일 크기를
+     2700px → 1200px → 700px로 계속 줄여서 해결했습니다. 확대를 덜 할수록
+     얼룩 하나하나가 작아져서 뭉게구름처럼 뭉쳐 보이던 게 잘게 부서집니다. */
+  background-color: var(--quiz-bg);
+  /* 파일명이 같은 채로 이미지 내용만 여러 번 바뀌어서, 브라우저가 예전
+     버전을 캐시해 계속 보여줄 수 있습니다 — 쿼리스트링으로 캐시를
+     깨뜨립니다. */
+  background-image: url("../img/watercolor-paper-texture.jpg?v=3");
+  background-repeat: repeat;
+  background-size: 700px auto;
+  background-blend-mode: multiply;
+  /* 이 화면부터는 HOME 버튼을 숨기고 "연구 종료"가 그 역할을 대신하므로
+     (js/intro.js 참고), 위쪽 padding도 HOME 버튼을 피할 필요 없이
+     원래 여백으로 둡니다. */
+  padding: clamp(20.0px, 1.5cqw, 34.0px) clamp(28.0px, 2.08cqw, 48.0px);
+  overflow: auto;
+}
+.who-header {
+  /* 척추뼈 장식 이미지(.who-spine-quiz)의 실제 표시 높이가 곧 이 헤더
+     영역의 높이가 되고, topbar는 그 위에 겹쳐서 세로 중앙 정렬됩니다
+     — "너무 위쪽에 있다, 척추뼈 그래픽 중심에 맞춰 내리자"는 피드백
+     반영. */
+  position: relative;
+  width: 100%;
+}
+.who-topbar {
+  /* 피그마 시안(Desktop - 40, node 7:4937) 기준으로 다시 맞췄습니다.
+     세 텍스트(프로젝트명·Who am I·표본실) 모두 같은 세로 중심선 위에
+     놓여 있어서, 가운데 타이틀만 absolute로 빼서 topbar 높이(왼쪽·
+     오른쪽 텍스트 줄 높이) 기준으로 top:50%+translate(-50%,-50%)로
+     중앙 정렬했습니다. topbar 자체도 .who-header(=척추뼈 이미지 높이)
+     안에서 세로 중앙에 오도록 absolute + top:50%/translateY(-50%)로
+     겹쳤습니다. 다만 척추뼈 그림 자체가 양끝(특히 표본실 쪽인 오른쪽
+     끝)으로 갈수록 가늘고 위치도 살짝 낮아서, 정확히 이미지 박스
+     한가운데(50%)에 맞추면 표본실 글자가 뼈 밖으로 살짝 벗어나
+     보였습니다 — 전체를 살짝 위로 당겨서 보정했습니다. */
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 50%;
+  transform: translateY(calc(-50% - 0.7cqw));
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+}
+.who-brand {
+  font-family: var(--font-title-kr);
+  /* 피그마 16px 그대로: 1728 기준 1728분의16 = 0.9259cqw, 화면이 커지면
+     최대 23.7px(16 * 2560/1728)까지만 커집니다. */
+  font-size: clamp(16.0px, 0.9259cqw, 23.7px);
+  font-weight: 700;
+  color: var(--blood);
+}
+.who-title {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  margin: 0;
+  font-family: var(--font-title-en);
+  font-weight: 700;
+  /* 피그마 66px 그대로: 1728분의66 = 3.82cqw, 최대 97.8px(66 * 2560/1728) */
+  font-size: clamp(66.0px, 3.82cqw, 97.8px);
+  color: var(--blood);
+}
+.who-room-link {
+  background: transparent;
+  border: 0;
+  /* 프로젝트명·Who am I와 같은 메인 포인트 레드로 통일 */
+  color: var(--blood);
+  font-family: var(--font-title-kr);
+  /* who-brand과 동일하게 피그마 16px 기준 */
+  font-size: clamp(16.0px, 0.9259cqw, 23.7px);
+  font-weight: 700;
+  cursor: pointer;
+  padding: 0;
+}
+.who-spine-quiz {
+  /* 이제 topbar가 이 위에 absolute로 겹치는 구조라, topbar 자리를
+     피하려고 끌어올리던 음수 margin-top은 더 이상 필요 없습니다. */
+  display: block;
+  width: 100%;
+  height: auto;
+  max-height: 9cqw;
+  object-fit: cover;
+  object-position: center 30%;
+  opacity: 0.5;
+  filter: grayscale(1) contrast(0.9);
+  pointer-events: none;
+}
+
+.who-body {
+  flex: 1;
+  display: flex;
+  align-items: stretch;
+  gap: clamp(18.0px, 1.04cqw, 26.7px);
+  width: 100%;
+  margin-top: clamp(10.0px, 0.58cqw, 14.8px);
+  min-height: 0;
+}
+.who-col {
+  display: flex;
+  flex-direction: column;
+  gap: clamp(14.0px, 0.81cqw, 20.7px);
+}
+.who-col-left {
+  width: clamp(200px, 15.7cqw, 260px);
+  flex-shrink: 0;
+  /* 카드 두 개(상세 정보·기본 정보) 높이 합이 옆 칸(표본 사진)보다
+     짧아서 위쪽에 붙고 아래쪽이 크게 비어 보였습니다 — 세로 가운데로
+     정렬. safe 키워드를 붙여서, 내용이 짧을 때는 그대로 가운데 정렬을
+     유지하되 내용이 칸 높이를 넘어설 만큼 길 때는(표본마다 상세 정보
+     글자 수가 다름) 위쪽 기준 정렬로 자동 전환되어 헤더 쪽으로 넘치지
+     않도록 합니다. */
+  justify-content: safe center;
+  /* 두 카드 사이 간격이 너무 좁다는 피드백 반영 — .who-col 기본 gap보다
+     넉넉하게 벌립니다. */
+  gap: clamp(26.0px, 1.5cqw, 38.5px);
+  /* "상세 정보" 라벨이 잘리는 진짜 원인을 찾았습니다 — 문단 길이와는
+     무관했습니다. .info-card-tab-img는 카드 위쪽 절반이 카드 테두리
+     밖으로 튀어나오도록 디자인되어 있는데(top:0 + translateY(-50%)),
+     이 칸에 overflow:hidden을 걸어두면 카드가 칸 맨 위에 딱 붙을 때
+     (가운데 정렬 여백이 라벨 튀어나온 만큼도 안 될 때) 그 튀어나온
+     부분이 그대로 잘려버립니다. 문단이 짧아서 전혀 넘치지 않는 표본도
+     이 여백이 부족하면 똑같이 잘렸습니다. 그래서 라벨이 튀어나오는
+     만큼(카드 위 여백) 위쪽에 미리 자리를 확보해서, 어떤 표본이든
+     라벨이 이 칸 경계에 닿지 않도록 합니다. */
+  padding-top: clamp(18.0px, 1.0cqw, 26.0px);
+  /* 위 padding-top으로 이미 라벨 자리를 확보했고, 상세 정보 문단은
+     js/intro.js의 fitDetailText()가 실제 남은 공간에 맞춰 문장 단위로
+     자릅니다. 그래도 혹시 모를 경우에 대비해 이 칸은 넘치는 내용을
+     스크롤바 없이 조용히 숨기도록 hidden으로 막아둡니다. */
+  overflow: hidden;
+}
+.who-col-center {
+  flex: 1;
+  min-width: 0;
+  /* 오답 토스트(.quiz-feedback)를 이 칸 안에서 절대 위치로 띄우기 위한
+     기준점입니다. */
+  position: relative;
+}
+.who-col-right {
+  width: clamp(210px, 16.2cqw, 268px);
+  flex-shrink: 0;
+  align-items: stretch;
+  /* 힌트카드+선택지가 옆 칸(표본 사진)보다 짧아서 위로 쏠려 보였습니다
+     — 왼쪽 정보 카드 칸과 마찬가지로 세로 가운데 정렬. */
+  justify-content: center;
+}
+
+/* 정답을 맞히면(scene5에 is-answered 클래스) 정답 공개 카드가 팝업처럼
+   뜨고, 그 뒤로 화면 전체(헤더·좌우 칸·표본 카드·하단 진행바까지 전부)가
+   어두운 스크림에 덮여 가라앉습니다. 개별 요소마다 filter를 거는 대신,
+   화면 전체를 덮는 반투명 검정 레이어 하나(.who-answer-scrim)로 처리하고
+   .reveal-card만 그 위(z-index)에 떠 있도록 했습니다. */
+.who-answer-scrim {
+  position: absolute;
+  inset: 0;
+  background: rgba(6, 5, 4, 0.78);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.4s ease;
+  z-index: 40;
+}
+#scene5.is-answered .who-answer-scrim {
+  opacity: 1;
+}
+
+/* =========================================================
+   문제 화면 튜토리얼 — 피그마(Desktop - 43~47) 참고
+   화면 요소 5곳(상세·기본 정보 카드 / 힌트 카드 / 선택지 / 진행률 /
+   연구종료)을 순서대로 짚어주는 스포트라이트 방식입니다. 실제 대상
+   요소는 표본마다, 화면 크기마다 위치·크기가 계속 바뀌므로, 피그마
+   원본처럼 검은 사각형 4장을 고정 좌표로 잘라 붙이는 대신 매 단계마다
+   js/intro.js가 대상 요소의 실제 위치를 재서 스포트라이트와 말풍선을
+   그 자리에 맞춥니다. */
+.tutorial-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 90;
+  pointer-events: auto;
+}
+.tutorial-overlay[hidden] {
+  display: none;
+}
+/* 오답 처리(스킵) 화면 1단계: 한 문제에서 두 번 틀렸을 때 화면 전체를
+   어둡게 덮고 가운데에 멘트를 띄웁니다. 튜토리얼 오버레이보다도 위
+   (z-index)에 둬서, 혹시 겹치는 상황이 생겨도 항상 맨 위에 보이게
+   합니다. 1.8초 뒤 자동으로 2단계(정답 공개 카드, .reveal-card)로
+   넘어가는데, 기다리지 않고 화면 아무 곳이나 클릭해도 바로 2단계로
+   넘어갈 수 있어서(js/intro.js의 triggerQuizSkip 참고) cursor를
+   pointer로 둬서 클릭 가능하다는 걸 알려줍니다. */
+.quiz-fail-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 95;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.72);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.6s ease;
+  cursor: pointer;
+}
+.quiz-fail-overlay.is-visible {
+  opacity: 1;
+  pointer-events: auto;
+}
+.quiz-fail-overlay[hidden] {
+  display: none;
+}
+.quiz-fail-text {
+  max-width: clamp(320.0px, 28cqw, 540.0px);
+  margin: 0;
+  padding: clamp(24.0px, 1.8cqw, 36.0px) clamp(30.0px, 2.3cqw, 46.0px);
+  background: rgba(10, 8, 6, 0.94);
+  border: 1px solid var(--brass);
+  border-radius: 6px;
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.5);
+  color: #fff;
+  font-family: var(--font-title-kr);
+  font-size: clamp(17.5px, 1.05cqw, 22.5px);
+  line-height: 1.6;
+  text-align: center;
+  word-break: keep-all;
+}
+/* 스포트라이트: 대상 요소 자리만 뚫려 보이도록, 그 자리를 뺀 화면
+   전체를 box-shadow로 어둡게 채웁니다(실제 구멍을 뚫는 게 아니라,
+   테두리 밖으로 9999px짜리 그림자를 넓게 깔아서 "그 부분만 밝아
+   보이게" 하는 방식 — 대상 요소 크기가 표본/화면 크기마다 달라져도
+   항상 정확히 맞습니다). */
+.tutorial-spot {
+  position: fixed;
+  border-radius: 10px;
+  box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.55);
+  transition:
+    top 0.35s ease,
+    left 0.35s ease,
+    width 0.35s ease,
+    height 0.35s ease;
+  pointer-events: none;
+}
+.tutorial-tip {
+  position: fixed;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  gap: clamp(8.0px, 0.7cqw, 14.0px);
+  /* 체크박스 오른쪽에 단계 숫자("1/8")가 붙으면서 필요한 가로 폭이 늘어나,
+     기존 458px보다 여유를 조금 더 줬습니다. */
+  max-width: clamp(280.0px, 25.5cqw, 492.0px);
+  background: rgba(10, 8, 6, 0.94);
+  padding: clamp(14.0px, 1.0cqw, 20.0px) clamp(18.0px, 1.4cqw, 28.0px);
+  border-radius: 6px;
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.45);
+  transform-origin: center center;
+}
+/* 튜토리얼의 첫 말풍선(아직 화면에 말풍선이 없는 상태)이 등장할 자리는
+   js/intro.js가 즉시(트랜지션 없이) 값을 맞춰 두고, 등장 자체는 제자리에서
+   살짝 커지며 튕기듯 나타나는 is-appearing 팝 애니메이션으로 보여줍니다.
+   예전에는 top/left에 늘 트랜지션을 걸어뒀는데, 위치 계산상 항상 (0,0)에서
+   실제 위치로 한 번 이동시키는 구조라 매번 "화면 좌측 상단에서 상자가
+   밀려오는" 것처럼 보이는 문제가 있었습니다. */
+/* 쫀득한 느낌을 위해 easeOutBack 계열(0.34, 1.56, 0.64, 1) 커브를 써서
+   커지는 도중 살짝 튀어나갔다가(overshoot) 제 크기로 돌아오게 합니다. */
+.tutorial-tip.is-appearing {
+  animation: tutorial-tip-pop 0.52s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+/* 두 번째 단계부터는 말풍선이 이미 화면에 떠 있는 채로 다음 자리로
+   자연스럽게 이동합니다(js/intro.js의 revealTutorialTip 참고) — 튕기는
+   팝 애니메이션 대신, 직전 위치에서 새 위치로 스르륵 미끄러지는 모션입니다. */
+.tutorial-tip.is-sliding {
+  transition:
+    top 0.4s ease,
+    left 0.4s ease;
+}
+@keyframes tutorial-tip-pop {
+  0% {
+    opacity: 0;
+    transform: scale(0.7);
+  }
+  55% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .tutorial-tip.is-appearing {
+    animation: none;
+  }
+}
+.tutorial-tip-text {
+  margin: 0;
+  flex: 1;
+  color: #fff;
+  font-family: var(--font-title-kr);
+  font-size: clamp(16.0px, 0.96cqw, 20.5px);
+  line-height: 1.5;
+  text-align: center;
+  /* 기본값(어떤 글자에서든 줄바꿈)이면 "선택지"처럼 한 단어가 "선 /
+     택지"로 쪼개져 보기 안 좋습니다. keep-all은 띄어쓰기 단위로만
+     줄을 바꿔서 자연스러운 한글 줄바꿈이 되게 합니다. */
+  word-break: keep-all;
+  /* TUTORIAL_STEPS 문구에 직접 넣은 \n 줄바꿈을 그대로 살립니다
+     (textContent로 넣기 때문에 <br/>을 쓸 수 없어 이 방식을 씁니다). */
+  white-space: pre-line;
+}
+.tutorial-next-wrap {
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 8px;
+}
+/* 전체 단계 중 몇 번째인지("1/8") — 문제 화면의 who-progress-count와
+   같은 형식이되, 말풍선의 어두운 배경 위라 옅은 흰색으로 톤을 낮췄습니다. */
+.tutorial-step-count {
+  font-family: var(--font-title-en);
+  font-weight: 700;
+  font-size: 15pt;
+  color: rgba(255, 255, 255, 0.6);
+  white-space: nowrap;
+}
+.tutorial-next {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: clamp(40.0px, 3.0cqw, 56.0px);
+  height: clamp(40.0px, 3.0cqw, 56.0px);
+  background: transparent;
+  border: 0;
+  cursor: pointer;
+}
+/* 다음 표본/연구 종료 버튼과 같은 이유로, 보이는 체크박스 크기는 그대로
+   두고 눈에 안 보이는 ::before로 클릭/호버 영역만 사방으로 넓혔습니다. */
+.tutorial-next::before {
+  content: "";
+  position: absolute;
+  inset: clamp(-14.0px, -0.85cqw, -10.0px);
+}
+.tutorial-next:hover .tutorial-check-box {
+  stroke: var(--blood, #b3261e);
+}
+.tutorial-next svg {
+  width: 100%;
+  height: 100%;
+}
+.tutorial-check-box {
+  fill: transparent;
+  transition: stroke 0.15s ease;
+}
+.tutorial-check-mark {
+  opacity: 0;
+  stroke-dasharray: 26;
+  stroke-dashoffset: 26;
+  transform-origin: center;
+  transition:
+    opacity 0.12s ease,
+    stroke-dashoffset 0.4s ease;
+}
+.tutorial-next.is-checked .tutorial-check-box {
+  fill: var(--blood, #b3261e);
+  stroke: var(--blood, #b3261e);
+}
+.tutorial-next.is-checked .tutorial-check-mark {
+  opacity: 1;
+  stroke-dashoffset: 0;
+}
+
+/* 왼쪽: 상세정보 · 기본정보 — 정답을 맞히기 전부터 보이는 단서 카드 */
+.info-card {
+  position: relative;
+  background: var(--quiz-card);
+  border: 1px solid rgba(0, 0, 0, 0.12);
+  box-shadow: 0 3px 10px rgba(0, 0, 0, 0.18);
+  padding: clamp(22.0px, 1.39cqw, 32.0px) clamp(14.0px, 0.81cqw, 20.7px) clamp(14.0px, 0.81cqw, 20.7px);
+}
+/* 상세 정보 카드 — 직접 그린 배경/테두리/그림자 대신, 레이너스가 준
+   원본 종이 프레임 이미지(Group 54.png, 찢어진 하단 모서리가 있는
+   카드)를 그대로 씁니다. 카드 높이는 내용(글자 길이)에 따라 달라지므로
+   background-size:100% 100%로 프레임을 박스 크기에 맞춰 늘립니다. */
+.info-card-detail {
+  /* 파일명이 같은 채로 색감(흰색→미색)만 여러 번 바뀌어서, 브라우저가
+     예전 버전을 캐시해 계속 보여줄 수 있습니다 — 쿼리스트링으로 캐시를
+     깨뜨립니다(watercolor-paper-texture 때와 동일한 이유). */
+  background: url("../img/info-detail-frame.png?v=3") no-repeat;
+  background-size: 100% 100%;
+  border: none;
+  box-shadow: none;
+  /* 라벨(탭)과 본문 시작 사이 여백이 너무 없어서 본문을 조금 더
+     내림 — 기본 정보 카드는 그대로 두고 이 카드만 위쪽 여백 추가. */
+  padding-top: calc(clamp(22.0px, 1.39cqw, 32.0px) + 12px);
+  /* 이번엔 텍스트를 올리는 대신 카드(프레임) 자체를 아래로 4pt 더
+     늘립니다 — background-size:100% 100%라 프레임 이미지도 같이 늘어남. */
+  padding-bottom: calc(clamp(14.0px, 0.81cqw, 20.7px) + 4pt);
+}
+/* 아래쪽 여백(본문 마지막 줄 ↔ 카드 하단)도 빡빡해서, 프레임 크기는
+   그대로 두고 본문 문단만 4pt 위로 올립니다. */
+.info-card-detail .info-card-text {
+  margin-top: -8pt;
+  /* 표본마다 상세 정보 글자 수가 달라서, 긴 문단은 옆(기본 정보) 카드와
+     합친 높이가 왼쪽 칸을 넘어 헤더/진행바를 침범하거나(잘림) 스크롤이
+     생기는 문제가 있었습니다 — 줄 수로 자르면(예: max-height + hidden)
+     문장이나 글자 중간에서 잘려서 보기 어색해, js/intro.js의
+     fitDetailText()에서 실제로 들어갈 수 있는 만큼 온점(문장) 단위로
+     끊어 텍스트 자체를 채웁니다. 이 규칙은 남는 내용을 순수 안전장치로만
+     숨기고, 실제 자르는 기준은 아닙니다. */
+}
+/* 기본 정보 카드 — 상세 정보와 같은 방식으로, 레이너스가 준 원본
+   프레임 이미지(B-info_frame/Group 17.png)를 그대로 씁니다. */
+.info-card-basic {
+  background: url("../img/info-basic-frame.png?v=1") no-repeat;
+  background-size: 100% 100%;
+  border: none;
+  box-shadow: none;
+  padding-top: calc(clamp(22.0px, 1.39cqw, 32.0px) + 12px);
+  /* 서식지 텍스트 밑줄과 카드 하단 찢어진 모서리 사이 여백이 거의
+     없어서, 상세 정보 때처럼 프레임을 아래로 늘립니다. */
+  padding-bottom: calc(clamp(14.0px, 0.81cqw, 20.7px) + 8pt);
+}
+.info-card-tab {
+  position: absolute;
+  top: 0;
+  left: clamp(10.0px, 0.58cqw, 14.8px);
+  transform: translateY(-50%);
+  background: var(--blood);
+  color: var(--quiz-card);
+  font-family: var(--font-title-kr);
+  font-size: clamp(11.7px, 0.64cqw, 16.3px);
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  padding: 3px 10px;
+}
+/* 상세 정보 탭도 마찬가지로 원본 이미지(Layer_1.png, "상세 정보"
+   글자가 이미 그려진 빨간 라벨)를 그대로 사용합니다. */
+.info-card-tab-img {
+  /* 레이너스가 준 참고 이미지처럼, 카드 왼쪽에 붙는 게 아니라 카드
+     상단 가운데에 오도록 가운데 정렬. */
+  position: absolute;
+  top: 0;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  display: block;
+  width: clamp(90.0px, 5.2083cqw, 133.3px);
+  height: auto;
+}
+.info-card-text {
+  margin: 0;
+  color: var(--quiz-ink);
+  font-family: var(--font-body-kr);
+  /* 16.5px로 조정 — 다른 16.5px 기준 요소들과 같은 clamp 비율 사용 */
+  font-size: clamp(16.5px, 0.9cqw, 24.1px);
+  line-height: 1.55;
+  /* 튜토리얼 말풍선과 같은 이유로, 단어 중간이 아니라 띄어쓰기 단위로만
+     줄바꿈되게 합니다. */
+  word-break: keep-all;
+}
+/* 기본 정보 카드의 각 구획(분류/상태, 서식지, 지도, 서식지 텍스트)을
+   레이너스가 준 원본 목업(B-info_frame의 완성본, 판다 예시 데이터)처럼
+   가로줄로 구분합니다 — "분류｜포유류" 형식의 행 + 굵은 라벨 뒤 세로
+   막대 + 구획마다 밑줄. */
+.info-row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+  padding: clamp(6.0px, 0.35cqw, 8.9px) 0;
+  border-bottom: 1px solid var(--quiz-ink);
+  color: var(--quiz-ink);
+  font-family: var(--font-body-kr);
+  /* 너무 작다는 피드백으로 2px 키움 */
+  font-size: clamp(14.7px, calc(0.69cqw + 2px), 20.5px);
+}
+.info-row span:first-child {
+  font-family: var(--font-pretendard);
+  font-weight: 400;
+}
+.info-row span:first-child::after {
+  content: "\A0\A0｜";
+  font-weight: 400;
+  color: var(--quiz-ink-dim);
+}
+.info-row-label {
+  display: block;
+  margin-top: 0;
+  padding: clamp(6.0px, 0.35cqw, 8.9px) 0;
+  border-bottom: 1px solid var(--quiz-ink);
+  text-align: center;
+  color: var(--quiz-ink);
+  font-family: var(--font-pretendard);
+  font-weight: 400;
+  /* 너무 작다는 피드백으로 2px 키움 */
+  font-size: clamp(14.7px, calc(0.69cqw + 2px), 20.5px);
+}
+.info-map-wrap {
+  position: relative;
+  margin-top: clamp(6.0px, 0.35cqw, 8.9px);
+  padding-bottom: clamp(6.0px, 0.35cqw, 8.9px);
+  border-bottom: 1px solid var(--quiz-ink);
+}
+.info-map {
+  /* 레이너스가 종마다 핀까지 찍어서 준 크롭 지도 이미지를 그대로 씁니다.
+     여기서 필터나 핀 오버레이를 따로 추가하지 않습니다. */
+  display: block;
+  width: 100%;
+  height: auto;
+  /* 18개 지도 이미지가 전부 1817×1782(거의 정사각형) 비율로 크롭되어
+     있습니다 — 이 비율을 미리 지정해두면, 표본을 바꿔서 새 지도
+     이미지가 아직 다 로드되기 전에도 이 자리가 차지할 높이를 브라우저가
+     바로 알 수 있습니다. 이게 없으면 js/intro.js의 fitDetailText()가
+     지도가 로드되기 전 순간의(실제보다 낮은) 칸 높이를 기준으로 상세
+     정보 문장을 재는 바람에, 지도가 로드된 직후 카드 전체가 살짝
+     높아지면서 "상세 정보" 라벨이 칸 위로 밀려 잘리는 문제가 있었습니다. */
+  aspect-ratio: 1817 / 1782;
+}
+.info-habitat-text {
+  margin: 0;
+  padding: clamp(6.0px, 0.35cqw, 8.9px) 0;
+  border-bottom: 1px solid var(--quiz-ink);
+  text-align: center;
+  color: var(--quiz-ink);
+  font-family: var(--font-body-kr);
+  /* 너무 작다는 피드백으로 2px 키움 */
+  font-size: clamp(14.3px, calc(0.66cqw + 2px), 19.0px);
+  word-break: keep-all;
+}
+
+/* 가운데: 표본 사진 ↔ 정답 공개 카드 */
+.specimen-card[hidden],
+.reveal-card[hidden] {
+  display: none;
+}
+.specimen-card {
+  /* 좌우 정보 카드(--quiz-card, 밝은 크림)와 달리, 표본 사진 영역은
+     별도 배경을 칠하지 않고 투명하게 둬서 .scene-5의 종이 질감
+     배경이 그대로 비쳐 보이게 합니다(안 그러면 이 카드의 단색
+     배경이 그 위를 덮어서 질감이 안 보였습니다). */
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+}
+.specimen-img {
+  max-width: 88%;
+  max-height: 86%;
+  object-fit: contain;
+}
+.reveal-card {
+  position: relative;
+  /* 어두운 스크림(.who-answer-scrim, z-index:40)보다 위에 떠서
+     팝업처럼 보이도록 z-index를 높였습니다. */
+  z-index: 41;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  /* 메타 정보 줄이 카드 상단에 가로 전체로 깔리는 구조로 바뀌어서,
+     세로 가운데 정렬은 이제 .reveal-body(이미지 영역)가 맡습니다. */
+  align-items: stretch;
+  justify-content: flex-start;
+  /* 팝업 배경이 좀 더 어두웠으면 좋겠다는 피드백 반영 — #0a1620 → #050c12 */
+  background: #050c12;
+  overflow: hidden;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.6);
+}
+/* 2회 오답으로 스킵됐을 때만(.is-skipped) 보이는 배지 — 정답을 맞혀서
+   뜬 카드가 아니라 오답 처리 후 정답을 "확인"하는 카드라는 걸 알려줍니다.
+   js/intro.js의 triggerQuizSkip() 참고. */
+.reveal-skip-badge {
+  display: none;
+  position: absolute;
+  top: clamp(14.0px, 1.0cqw, 20.0px);
+  right: clamp(14.0px, 1.0cqw, 20.0px);
+  z-index: 2;
+  padding: clamp(5.0px, 0.35cqw, 7.0px) clamp(10.0px, 0.7cqw, 14.0px);
+  border-radius: 3px;
+  background: var(--blood);
+  color: var(--paper, #fff);
+  font-family: var(--font-body-kr);
+  font-size: clamp(12.0px, 0.66cqw, 14.5px);
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  white-space: nowrap;
+}
+.reveal-card.is-skipped .reveal-skip-badge {
+  display: inline-block;
+}
+/* 참고 이미지처럼 카드 구석에 작게 띄우던 것 대신, 카드 상단에 가로
+   전체 너비로 라벨｜값 두 줄(각 줄 밑에 밑줄)을 배치합니다 — 왼쪽 칸
+   "기본 정보" 카드의 .info-row와 같은 구성을, 정답 카드의 블루 톤에
+   맞춰 다시 쓴 버전입니다. */
+.reveal-meta {
+  display: flex;
+  flex-direction: column;
+  /* 두 줄 밑줄 길이가 서로 다르지 않았으면 좋겠다는 피드백 반영 —
+     묶음 전체를 내용 중 더 긴 쪽 너비에 맞춰(fit-content) 줄이고,
+     각 줄은 align-items:stretch(기본값)로 그 너비에 맞춰 늘어나게
+     해서 두 밑줄 길이가 항상 같아지도록 했습니다. */
+  width: fit-content;
+}
+.reveal-meta-row {
+  display: flex;
+  align-items: center;
+  gap: clamp(10.0px, 0.58cqw, 14.8px);
+  padding: clamp(10.0px, 0.58cqw, 14.8px) clamp(14.0px, 0.81cqw, 20.7px)
+    clamp(10.0px, 0.58cqw, 14.8px) clamp(20.0px, 1.16cqw, 29.6px);
+  border-bottom: 1px solid rgba(190, 220, 230, 0.35);
+  font-family: var(--font-mono-en);
+  /* 16px 미만이었던 걸 다른 UI 텍스트와 같은 16px 기준으로 통일한 뒤,
+     생물 명 값만 빼고 나머지(라벨 두 개 + 도감 넘버 값)는 여기서
+     0.5pt(≈0.67px) 더 키웠습니다 — 생물 명(#revealName)은 아래에서
+     이 값을 다시 원래 크기로 되돌립니다. */
+  font-size: clamp(16.7px, 0.96cqw, 24.7px);
+  letter-spacing: 0.03em;
+}
+.reveal-meta-label {
+  flex-shrink: 0;
+  min-width: clamp(64.0px, 4.6cqw, 90.0px);
+  color: rgba(190, 220, 230, 0.55);
+  /* 라벨(도감 넘버·생물 명)과 값(타자기체/최정호 스크린) 사이 두께
+     차이가 너무 커 보인다는 피드백 — 라벨을 기본 정보 카드 라벨과
+     같은 계열인 프리텐다드로, 기존(400)보다 조금 더 두껍게. */
+  font-family: var(--font-pretendard);
+  font-weight: 600;
+}
+.reveal-meta-label::after {
+  content: "\A0｜";
+}
+.reveal-meta-value {
+  color: #d8f0f5;
+  /* 넘버·생물명 값을 우측 정렬로 맞춥니다. 값 칸 너비를 폰트로 직접
+     재서 고정값으로 박아두면(이전 시도) 실제 폰트(Adobe Fonts, 이
+     작업 환경에서는 로드가 안 돼서 정확히 잴 수 없음)와 어긋나 값이
+     카드 밖으로 밀려나거나 잘릴 위험이 있었습니다. 대신 flex:1로
+     "이 줄에서 라벨과 간격을 뺀 나머지 전부"를 값 칸으로 만들고, 그
+     안에서 text-align:right로 밀어붙입니다 — 두 줄(도감 넘버·생물 명)
+     전체 너비는 이미 .reveal-meta가 더 넓은 줄 기준으로 맞춰져 있어서
+     (같은 밑줄 길이 로직), 어떤 값이 와도 항상 같은 오른쪽 기준선에
+     맞춰집니다. 폰트가 무엇으로 바뀌든 안전합니다. */
+  flex: 1;
+  min-width: 0;
+  text-align: right;
+}
+/* 도감 넘버 값은 타자기 폰트(--font-mono-en) 그대로 두되, 굵기만
+   bold로 — 키트에 4종 스타일(Regular/Bold/Italic/Bold Italic)이 다
+   있어서 font-weight:700이 Prestige Elite Std Bold로 매핑됩니다. */
+#revealCode {
+  font-weight: 700;
+}
+/* 생물 명 값은 최정호 스크린(agchoijeongho-screen, --font-title-kr)으로
+   — 도감 넘버(영문·숫자 코드)는 그대로 타자기 폰트(--font-mono-en)를
+   유지하고, 한글 생물명만 사이트 기본 한글 폰트로 바꿉니다. */
+#revealName {
+  font-family: var(--font-title-kr);
+  /* 나머지(라벨·도감 넘버 값)만 0.5pt 키우고 생물 명은 그대로 —
+     .reveal-meta-row에서 커진 font-size를 여기서 원래 크기로 복원. */
+  font-size: clamp(16.0px, 0.93cqw, 23.7px);
+}
+.reveal-body {
+  flex: 1;
+  min-height: 0;
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.reveal-img {
+  max-width: 62%;
+  max-height: 78%;
+  object-fit: contain;
+}
+.reveal-next {
+  position: absolute;
+  /* 프레임 가장자리에 너무 붙어 보인다는 피드백 반영 — 안쪽으로 더 들임 */
+  right: clamp(32.0px, 1.85cqw, 47.4px);
+  bottom: clamp(30.0px, 1.74cqw, 44.5px);
+  background: transparent;
+  border: 1px solid rgba(190, 220, 230, 0.5);
+  border-radius: 999px;
+  color: #d8f0f5;
+  font-family: var(--font-title-kr);
+  /* 16px 미만이었던 걸 16px 기준으로 통일 */
+  font-size: clamp(16.0px, 0.93cqw, 23.7px);
+  padding: clamp(8.0px, 0.46cqw, 11.9px) clamp(20.0px, 1.16cqw, 29.6px);
+  cursor: pointer;
+  transition: border-color 0.15s ease, color 0.15s ease;
+}
+/* 선택 영역이 알약 테두리에 딱 맞게 타이트해서, 근처로 마우스를 옮겨도
+   호버가 안 켜진다는 피드백 반영 — 보이는 알약 크기/여백은 그대로 두고,
+   눈에 안 보이는 ::before를 사방으로 더 넓게 깔아서 그 위에 마우스가
+   올라와도(자식 요소이므로) 버튼의 :hover가 함께 켜지도록 했습니다. */
+.reveal-next::before {
+  content: "";
+  position: absolute;
+  inset: clamp(-18.0px, -1.05cqw, -14.0px);
+}
+.reveal-next:hover {
+  border-color: #d8f0f5;
+}
+
+/* =========================================================
+   컬렉션 팝업(scene-6, 연구 완료 화면) — 이번 연구에서 마주친 18개
+   표본 전체를 정답 이미지·도감 넘버·생물 명과 함께 모아 봅니다.
+   정답 공개 카드(.reveal-card)와 같은 짙은 블루 엑스레이 팔레트를
+   그대로 가져와서, 표본 한 칸 한 칸이 그 카드를 축소해 늘어놓은
+   것처럼 보이도록 통일했습니다. */
+.collection-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 110;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.78);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.35s ease;
+}
+.collection-overlay.is-visible {
+  opacity: 1;
+  pointer-events: auto;
+}
+.collection-overlay[hidden] {
+  display: none;
+}
+.collection-panel {
+  position: relative;
+  width: clamp(600.0px, 62cqw, 1180.0px);
+  max-height: 82dvh;
+  display: flex;
+  flex-direction: column;
+  gap: clamp(16.0px, 1.16cqw, 28.0px);
+  background: #050c12;
+  border: 1px solid rgba(190, 220, 230, 0.25);
+  border-radius: 8px;
+  padding: clamp(28.0px, 2.1cqw, 44.0px) clamp(24.0px, 1.85cqw, 40.0px);
+  box-shadow: 0 24px 70px rgba(0, 0, 0, 0.65);
+}
+.collection-title {
+  margin: 0;
+  color: #d8f0f5;
+  font-family: var(--font-title-kr);
+  font-size: clamp(22.0px, 1.4cqw, 30.0px);
+  letter-spacing: 0.02em;
+  text-align: center;
+}
+.collection-close {
+  position: absolute;
+  top: clamp(14.0px, 1.0cqw, 22.0px);
+  right: clamp(14.0px, 1.0cqw, 22.0px);
+  width: clamp(32.0px, 2.1cqw, 40.0px);
+  height: clamp(32.0px, 2.1cqw, 40.0px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: 1px solid rgba(190, 220, 230, 0.4);
+  border-radius: 50%;
+  color: #d8f0f5;
+  font-size: clamp(18.0px, 1.16cqw, 22.0px);
+  line-height: 1;
+  cursor: pointer;
+  transition: border-color 0.15s ease, color 0.15s ease, transform 0.15s ease;
+}
+.collection-close:hover {
+  border-color: #d8f0f5;
+  transform: scale(1.08);
+}
+/* 표본 수가 늘어나 세로로 넘치면 이 안에서만 스크롤됩니다(팝업 전체가
+   아니라 격자 영역만 — 제목·닫기 버튼은 항상 고정 위치에 남습니다). */
+/* 화면 크기와 상관없이 한 줄에 항상 4칸이 들어가도록 auto-fill 대신
+   고정 4열로 바꿨습니다 — 열이 줄어든 만큼 칸 하나하나(와 그 안의
+   이미지)가 이전보다 더 커집니다. */
+.collection-grid {
+  overflow-y: auto;
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: clamp(16.0px, 1.2cqw, 26.0px);
+  padding-right: clamp(4.0px, 0.4cqw, 8.0px);
+}
+/* 표본마다 골격 사진의 실제 비율·여백이 제각각이라, 이미지 크기를
+   내용에 맞게(aspect-ratio) 잡으면 카드마다 높이가 달라져 격자가
+   들쭉날쭉해 보였습니다. 이미지 칸 높이를 고정값으로 못박고 그 안에서
+   object-fit:contain으로 이미지를 맞춰 넣어, 원본 크기와 상관없이
+   모든 카드의 이미지 칸이 항상 같은 크기가 되도록 했습니다. */
+.collection-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  height: clamp(224.0px, 19.5cqw, 288.0px);
+  padding: clamp(14.0px, 1.05cqw, 21.0px) clamp(10.0px, 0.7cqw, 14.0px);
+  background: rgba(216, 240, 245, 0.05);
+  border: 1px solid rgba(190, 220, 230, 0.15);
+  border-radius: 6px;
+}
+.collection-item-img-wrap {
+  width: 100%;
+  height: clamp(134.0px, 11.6cqw, 174.0px);
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.collection-item-img {
+  max-width: 94%;
+  max-height: 94%;
+  object-fit: contain;
+}
+/* 도감 넘버·생물 명 — 위 이미지 칸 높이가 고정이라 남는 공간이 카드마다
+   달라지는데, margin-top:auto로 그 공간을 이 블록 "위"로 몰아줘서
+   텍스트가 항상 카드 하단에 붙도록 합니다. */
+.collection-item-code {
+  margin-top: auto;
+  color: rgba(190, 220, 230, 0.6);
+  font-family: var(--font-mono-en);
+  font-weight: 700;
+  font-size: clamp(12.0px, 0.68cqw, 15.0px);
+  letter-spacing: 0.02em;
+  text-align: center;
+}
+.collection-item-name {
+  margin-top: clamp(6.0px, 0.4cqw, 10.0px);
+  color: #d8f0f5;
+  font-family: var(--font-title-kr);
+  font-size: clamp(14.0px, 0.82cqw, 17.5px);
+  text-align: center;
+  word-break: keep-all;
+}
+
+/* 오른쪽: HINT 카드 + 후보 4지선다 */
+/* 레이너스가 준 힌트 카드 디자인(img/hint-card.png)을 그대로 씁니다 —
+   삼각형 "?" 아이콘/HINT 글자를 CSS로 그리던 이전 버전은 제거했습니다.
+   클릭하면 카드가 3D로 뒤집히면서, 뒷면(하얀 면 + 같은 카드 테두리/척추
+   그래픽)에 표본 힌트 이미지가 올라오는 연출입니다 — 가운데 표본 사진
+   자리는 더 이상 건드리지 않습니다. */
+.hint-card {
+  display: block;
+  width: 100%;
+  padding: 0;
+  border: none;
+  background: none;
+  cursor: pointer;
+  perspective: 1600px;
+  transition: opacity 0.15s ease;
+}
+.hint-card:hover:not(:disabled) {
+  opacity: 0.85;
+}
+.hint-card.is-flipped:hover {
+  opacity: 1;
+}
+.hint-card:disabled {
+  cursor: default;
+}
+.hint-card-flip {
+  position: relative;
+  display: block;
+  width: 100%;
+  transform-style: preserve-3d;
+  transition: transform 0.7s cubic-bezier(0.45, 0.05, 0.2, 1);
+}
+.hint-card.is-flipped .hint-card-flip {
+  transform: rotateY(180deg);
+}
+.hint-card-face {
+  display: block;
+  width: 100%;
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+}
+.hint-card-face-back {
+  position: absolute;
+  top: 0;
+  left: 0;
+  transform: rotateY(180deg);
+}
+.hint-card-img {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+/* 뒷면 카드의 하얀 안쪽 영역(테두리/척추 그래픽 제외) 비율에 맞춰
+   힌트 이미지를 배치합니다 — img/hint-card-back.png 기준 좌표. */
+.hint-card-hint-img {
+  position: absolute;
+  top: 12.9%;
+  left: 2.9%;
+  width: 94.2%;
+  height: 73%;
+  object-fit: contain;
+}
+
+.quiz-choices {
+  display: flex;
+  flex-direction: column;
+  gap: clamp(8.0px, 0.46cqw, 11.9px);
+}
+.quiz-choice {
+  background: rgba(15, 13, 11, 0.94);
+  border: 1px solid rgba(0, 0, 0, 0.5);
+  border-radius: 4px;
+  color: var(--paper);
+  font-family: var(--font-title-kr);
+  /* 14px → 16px, 반응형 clamp 비율은 그대로 유지 */
+  font-size: clamp(16.0px, 0.93cqw, 23.7px);
+  padding: clamp(12.0px, 0.69cqw, 17.8px) clamp(10.0px, 0.58cqw, 14.8px);
+  cursor: pointer;
+  transition: border-color 0.2s ease, background-color 0.2s ease;
+}
+/* 테두리만 빨개지는 건 눈에 잘 안 띈다는 피드백 반영 — 배경(fill) 자체가
+   레드로 차오르는 애니메이션으로 교체했습니다. */
+.quiz-choice:hover:not(:disabled):not(.is-wrong) {
+  background-color: var(--blood);
+  border-color: var(--blood-bright);
+}
+.quiz-choice:disabled {
+  cursor: default;
+  opacity: 0.55;
+}
+/* 오답 클릭 시: 레드 대신 회색으로 톤다운하고, 좌우로 흔들리는
+   애니메이션을 붙였습니다. 같은 버튼을 다시 눌러도 흔들림이 재생되도록
+   JS에서 .is-shaking 클래스를 매번 떼었다 다시 붙입니다. */
+.quiz-choice.is-wrong {
+  border-color: rgba(255, 255, 255, 0.45);
+  background: rgba(90, 88, 84, 0.55);
+}
+.quiz-choice.is-shaking {
+  animation: quiz-choice-shake 0.4s ease;
+}
+@keyframes quiz-choice-shake {
+  0% { transform: translateX(0); }
+  20% { transform: translateX(-8px); }
+  40% { transform: translateX(7px); }
+  60% { transform: translateX(-5px); }
+  80% { transform: translateX(3px); }
+  100% { transform: translateX(0); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .quiz-choice.is-shaking {
+    animation: none;
+  }
+}
+/* 오답(1차) 토스트 — 가운데 표본 카드 위, 정해진 자리에 상자째로 살짝
+   아래에서 떠오르듯 나타났다가, 잠깐 머문 뒤 스르륵 페이드아웃됩니다.
+   2회째 오답 시 화면 전체를 덮는 스킵 연출(.quiz-fail-overlay, 전체
+   암전 + 클릭 대기)과 헷갈리지 않도록, 화면 전체가 아니라 카드 폭
+   안에서만 뜨는 작은 배지 형태로 만들었습니다.
+   화면 밖에서 날아들어오는 느낌이 아니라 원래 자리 바로 아래에서 살짝
+   떠오르는 정도로만 움직이고, 등장·퇴장 모두 느긋한 ease로 천천히
+   진행됩니다(이전엔 너무 빨랐다는 피드백 반영). */
+.quiz-feedback {
+  position: absolute;
+  top: clamp(18.0px, 5.5cqh, 56.0px);
+  left: 50%;
+  z-index: 30;
+  margin: 0;
+  max-width: 82%;
+  padding: clamp(10.0px, 0.6cqw, 15.0px) clamp(18.0px, 1.1cqw, 26.0px);
+  border-radius: 4px;
+  background: var(--blood);
+  opacity: 0;
+  pointer-events: none;
+  transform: translate(-50%, 20px);
+}
+.quiz-feedback-text {
+  display: block;
+  text-align: center;
+  text-wrap: balance;
+  font-family: var(--font-body-kr);
+  font-size: clamp(14.0px, 0.85cqw, 19.0px);
+  color: var(--paper);
+}
+.quiz-feedback.is-wrong {
+  animation: quiz-feedback-toast 2.4s ease forwards;
+}
+/* 0~29%: 상자 전체가 아래에서 살짝 떠오르며 나타남 (약 0.7초)
+   29~71%: 제자리에서 잠깐 머무름 (약 1초)
+   71~100%: 움직임 없이 서서히 사라짐 (약 0.7초) */
+@keyframes quiz-feedback-toast {
+  0% {
+    opacity: 0;
+    transform: translate(-50%, 20px);
+  }
+  29% {
+    opacity: 1;
+    transform: translate(-50%, 0);
+  }
+  71% {
+    opacity: 1;
+    transform: translate(-50%, 0);
+  }
+  100% {
+    opacity: 0;
+    transform: translate(-50%, 0);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .quiz-feedback.is-wrong {
+    animation: none;
+    opacity: 1;
+    transform: translate(-50%, 0);
+  }
+}
+
+/* 아래: 문제 진행률 (연구 종료 버튼은 이제 오른쪽 칸 안, 선택지 아래에 있음) */
+.who-footer {
+  display: flex;
+  justify-content: center;
+  width: 100%;
+  margin-top: clamp(14.0px, 0.81cqw, 20.7px);
+}
+/* 피그마 원본 확인 결과, n/18 카운트는 진행바 줄과 나란히가 아니라 그 위에
+   오른쪽 끝 맞춤으로 따로 떨어져 있는 줄이었습니다 — 두 줄 구조로 변경. */
+.who-progress-block {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: clamp(2.0px, 0.12cqw, 3.0px);
+}
+/* 문제 진행률 + 진행 표시 묶음 */
+.who-progress-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  /* 전체적으로 작아 보인다는 피드백 반영 — 묶음 전체를 약 1.3배로 키웠습니다. */
+  gap: clamp(15.6px, 0.9cqw, 23.1px);
+}
+.who-progress-label {
+  font-family: var(--font-title-en);
+  font-weight: 700;
+  font-size: clamp(16.5px, 0.9cqw, 24.1px);
+  color: var(--progress-red);
+  white-space: nowrap;
+}
+.who-progress {
+  display: flex;
+  gap: 5px;
+}
+.quiz-progress-tick {
+  /* 글자(20px)에 맞춰 원 크기도 비례해서(1.25배) 키웠습니다 — 그렇지 않으면
+     원보다 글자가 커져서 동그라미가 타원으로 찌그러집니다. */
+  width: clamp(22.8px, 1.51cqw, 35.8px);
+  aspect-ratio: 1;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  /* 피그마 원본 색상(#e4ded2, 옅은 탄색 원 + 흰 글자)으로 교체 —
+     기존 반투명 검정 오버레이보다 원본에 더 가깝습니다. */
+  background: #e4ded2;
+  color: #fff;
+  font-family: var(--font-mono-en);
+  /* 20px로 키움 — 미리보기 요청 */
+  font-size: clamp(20.0px, 1.16cqw, 29.6px);
+}
+/* 물음표(?)·느낌표(!)만 Noh Optique Display로 교체 — 체크(✓)는
+   기존 폰트(Prestige Elite Std) 그대로 둡니다. */
+.quiz-progress-tick::after {
+  content: "?";
+  font-family: var(--font-title-en);
+}
+.quiz-progress-tick.is-done::after {
+  content: "✓";
+  font-family: var(--font-mono-en);
+}
+.quiz-progress-tick.is-done {
+  background: #d8d0c0;
+}
+.quiz-progress-tick.is-current {
+  /* 피그마 원본의 진한 다홍색(#b43431) — 기존 --blood보다 살짝 더
+     갈색빛이 도는 톤입니다. */
+  background: #b43431;
+  color: #fff;
+}
+.quiz-progress-tick.is-current::after {
+  content: "!";
+  font-family: var(--font-title-en);
+}
+/* 오답 처리(스킵)되어 넘어간 문항 — 정답(is-done)과 구분되는 X 표시.
+   --progress-red보다 톤을 죽인(채도 낮춘) 벽돌빛 레드를 써서, 현재 문항의
+   진한 다홍색(is-current)보다는 확실히 가라앉아 보이게 했습니다. */
+.quiz-progress-tick.is-skipped {
+  background: #8c5852;
+  color: #fff;
+}
+.quiz-progress-tick.is-skipped::after {
+  content: "✕";
+  font-family: var(--font-mono-en);
+}
+.who-progress-count {
+  font-family: var(--font-title-en);
+  font-weight: 700;
+  font-size: clamp(16.5px, 0.9cqw, 24.1px);
+  color: var(--progress-red);
+  white-space: nowrap;
+}
+.who-end-btn {
+  /* 이제 힌트/선택지와 같은 오른쪽 칸 안에 있으므로, 칸 안에서는
+     오른쪽 끝에 붙습니다(칸의 align-items: stretch로 안 늘어나도록). */
+  align-self: flex-end;
+  /* 아래 ::before 확장 영역의 기준점을 이 버튼 자신으로 잡기 위한 포지셔닝 */
+  position: relative;
+  background: transparent;
+  border: 1px solid var(--quiz-ink);
+  border-radius: 999px;
+  color: var(--quiz-ink);
+  font-family: var(--font-title-kr);
+  /* 선택지 버튼과 같은 16px로 통일 */
+  font-size: clamp(16.0px, 0.93cqw, 23.7px);
+  padding: clamp(7.0px, 0.4cqw, 10.4px) clamp(18.0px, 1.04cqw, 26.7px);
+  cursor: pointer;
+  white-space: nowrap;
+  transition: border-color 0.2s ease, color 0.2s ease;
+}
+/* 다음 표본 버튼과 같은 이유로, 보이는 알약 크기는 그대로 두고
+   눈에 안 보이는 ::before로 호버 트리거 영역만 사방으로 넓혔습니다. */
+.who-end-btn::before {
+  content: "";
+  position: absolute;
+  inset: clamp(-16.0px, -0.95cqw, -12.0px);
+}
+/* 검은 테두리·글자를 통째로 레드로 바꾸는 호버 — 배경은 여전히 투명이라
+   테두리와 글자만 색이 바뀌어도 버튼 전체가 레드로 바뀐 것처럼 보입니다. */
+.who-end-btn:hover {
+  border-color: var(--blood-bright);
+  color: var(--blood-bright);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .stage.is-transitioning .scene-2 .scene-bg {
+    transform: none;
+  }
+  .stage.is-transitioning .flash {
+    animation: none;
+    opacity: 0.5;
+    transition: opacity 0.4s ease;
+  }
+  .seal-ring {
+    animation: none;
+    opacity: 0.7;
+  }
+}
