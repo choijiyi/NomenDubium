@@ -1838,7 +1838,11 @@ img {
    진행됩니다(이전엔 너무 빨랐다는 피드백 반영). */
 .quiz-feedback {
   position: absolute;
-  top: clamp(18.0px, 5.5cqh, 56.0px);
+  /* 표본 사진 칸(.who-col-center) 위쪽에 떠 있던 걸, 칸 가운데에 뜨도록
+     top을 50%로 바꿨습니다 — 아래쪽에서 살짝 떠오르는 기존 모션은
+     유지하되, 도착 지점만 칸의 정중앙이 되도록 transform도 함께
+     조정했습니다. */
+  top: 50%;
   left: 50%;
   z-index: 30;
   margin: 0;
@@ -1848,7 +1852,7 @@ img {
   background: var(--blood);
   opacity: 0;
   pointer-events: none;
-  transform: translate(-50%, 20px);
+  transform: translate(-50%, calc(-50% + 20px));
 }
 .quiz-feedback-text {
   display: block;
@@ -1867,26 +1871,26 @@ img {
 @keyframes quiz-feedback-toast {
   0% {
     opacity: 0;
-    transform: translate(-50%, 20px);
+    transform: translate(-50%, calc(-50% + 20px));
   }
   29% {
     opacity: 1;
-    transform: translate(-50%, 0);
+    transform: translate(-50%, -50%);
   }
   71% {
     opacity: 1;
-    transform: translate(-50%, 0);
+    transform: translate(-50%, -50%);
   }
   100% {
     opacity: 0;
-    transform: translate(-50%, 0);
+    transform: translate(-50%, -50%);
   }
 }
 @media (prefers-reduced-motion: reduce) {
   .quiz-feedback.is-wrong {
     animation: none;
     opacity: 1;
-    transform: translate(-50%, 0);
+    transform: translate(-50%, -50%);
   }
 }
 
