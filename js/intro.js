@@ -473,6 +473,25 @@ function fitDetailText(fullText) {
   infoDetailText.textContent = shown.trim();
 }
 
+// 표본 사진들(qImg/aImg/hintImg/mapImg)이 장당 1~3MB짜리 고해상도
+// PNG라서, loadSpecimen()이 호출되는 그 순간에야 .src를 걸면 화면이
+// 바뀌는 타이밍에 로딩 지연이 그대로 보입니다. new Image()로 미리
+// 같은 URL을 한 번 요청해 두면 브라우저 캐시에 적재되어, 실제로 그
+// 문제에 도달했을 때는 loadSpecimen()이 같은 URL로 .src를 다시
+// 걸어도 네트워크 요청 없이 캐시에서 바로 그려집니다. quizOrder
+// 기준 인덱스당 한 번만 선반영하도록 Set으로 중복 요청을 막습니다.
+const preloadedQuestionIndices = new Set();
+function preloadSpecimenAt(index) {
+  if (index < 0 || index >= quizOrder.length) return;
+  if (preloadedQuestionIndices.has(index)) return;
+  preloadedQuestionIndices.add(index);
+  const s = SPECIMENS[quizOrder[index]];
+  [s.qImg, s.aImg, s.hintImg, s.mapImg].forEach((src) => {
+    const preloadImg = new Image();
+    preloadImg.src = src;
+  });
+}
+
 function loadSpecimen(index) {
   const s = SPECIMENS[quizOrder[index]];
 
@@ -512,6 +531,9 @@ function loadSpecimen(index) {
 
   renderProgress();
   resetQuiz();
+
+  // 지금 문제를 푸는 동안 다음 문제 이미지를 미리 받아둡니다.
+  preloadSpecimenAt(index + 1);
 }
 
 // ===== 문제 화면 튜토리얼 =====
