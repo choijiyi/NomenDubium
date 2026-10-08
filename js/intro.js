@@ -123,10 +123,10 @@ const SPECIMENS = [
     habitat: "중국 쓰촨성, 산시성, 간쑤성 산악지대",
     detail:
       "여섯 번째 손가락처럼 보이는 돌기가 있다. 실제 손가락 뼈가 아닌 요골 종자골이 극도로 발달한 구조이다. 다른 곰에게도 이 뼈는 있지만 이처럼 발달해 엄지처럼 기능하지는 않는다. 이 덕분에 대나무 줄기를 엄지와 나머지 네 손가락과 완전히 다른 뼈에서 유사한 기능이 만들어진 것이다.",
-    qImg: "./img/specimens/01-ailuropoda-q.png?v=1",
-    aImg: "./img/specimens/01-ailuropoda-a-crop.png?v=1",
-    hintImg: "./img/specimens/01-ailuropoda-hint-crop.png?v=1",
-    mapImg: "./img/specimens/01-ailuropoda-map.png?v=1",
+    qImg: "./img/specimens/01-ailuropoda-q.webp?v=1",
+    aImg: "./img/specimens/01-ailuropoda-a-crop.webp?v=1",
+    hintImg: "./img/specimens/01-ailuropoda-hint-crop.webp?v=1",
+    mapImg: "./img/specimens/01-ailuropoda-map.webp?v=1",
   },
   {
     code: "02.MEN-06",
@@ -136,10 +136,10 @@ const SPECIMENS = [
     habitat: "북태평양 연안",
     detail:
       "뒷발은 앞발과 대조적으로 크고 넓게 발달한 물갈퀴 구조이다. 수달과 달리 뒷발이 완전히 지느러미 형태에 가깝게 변형되어있다. 육지에서는 움직임이 어색하지만, 수중에서는 강력한 추진력을 만든다.",
-    qImg: "./img/specimens/02-enhydra-q.png?v=1",
-    aImg: "./img/specimens/02-enhydra-a-crop.png?v=1",
-    hintImg: "./img/specimens/02-enhydra-hint-crop.png?v=1",
-    mapImg: "./img/specimens/02-enhydra-map.png?v=1",
+    qImg: "./img/specimens/02-enhydra-q.webp?v=1",
+    aImg: "./img/specimens/02-enhydra-a-crop.webp?v=1",
+    hintImg: "./img/specimens/02-enhydra-hint-crop.webp?v=1",
+    mapImg: "./img/specimens/02-enhydra-map.webp?v=1",
   },
   {
     code: "03.MCR-07",
@@ -149,10 +149,10 @@ const SPECIMENS = [
     habitat: "호주 퀸즐랜드 주 에핑 포레스트 국립공원",
     detail:
       "앞발 뼈가 매우 굵고 짧으며, 발톱 뼈가 크고 두껍게 발달해 잇다. 다섯 개의 발가락 모두에 강력한 발톱이 달려 있고, 단단한 점토질 토양도 파낼 수 있는 구조이다. 어깨뼈와 쇄골이 굴착 시 충격을 분산하기 위해 특수하게 발달해있다.",
-    qImg: "./img/specimens/03-lasiorhinus-q.png?v=1",
-    aImg: "./img/specimens/03-lasiorhinus-a-crop.png?v=1",
-    hintImg: "./img/specimens/03-lasiorhinus-hint-crop.png?v=1",
-    mapImg: "./img/specimens/03-lasiorhinus-map.png?v=1",
+    qImg: "./img/specimens/03-lasiorhinus-q.webp?v=1",
+    aImg: "./img/specimens/03-lasiorhinus-a-crop.webp?v=1",
+    hintImg: "./img/specimens/03-lasiorhinus-hint-crop.webp?v=1",
+    mapImg: "./img/specimens/03-lasiorhinus-map.webp?v=1",
   },
   {
     code: "04.MVU-05",
@@ -162,10 +162,10 @@ const SPECIMENS = [
     habitat: "전 세계의 모든 바다",
     detail:
       "앞지느러미 안쪽에는 상완골, 요골, 척골, 손목뼈, 손가락뼈가 온전히 남아있다. 겉에서는 지느러미로 보이지만 골격은 육상 포유류의 앞발 구조 그대로이다. 손가락 뼈가 5개 모두 존재하며 특히 두 번째와 세 번째 손가락 뼈의 마디수가 늘어나 지느러미를 넓게 만든다.",
-    qImg: "./img/specimens/04-physeter-q.png?v=1",
-    aImg: "./img/specimens/04-physeter-a-crop.png?v=1",
-    hintImg: "./img/specimens/04-physeter-hint-crop.png?v=1",
-    mapImg: "./img/specimens/04-physeter-map.png?v=1",
+    qImg: "./img/specimens/04-physeter-q.webp?v=1",
+    aImg: "./img/specimens/04-physeter-a-crop.webp?v=1",
+    hintImg: "./img/specimens/04-physeter-hint-crop.webp?v=1",
+    mapImg: "./img/specimens/04-physeter-map.webp?v=1",
   },
   {
     code: "05.MEX-09",
@@ -175,10 +175,10 @@ const SPECIMENS = [
     habitat: "호주, 태즈메이니아 섬, 뉴기니",
     detail:
       "꼬리가 몸통에서 이어지는 것이 아닌 척추와 거의 일체형이다. 꼬리를 따로 흔들지 못하고 몸 전체와 같이 움직인다. 이 역시 개과 동물과 명확히 구분된다.",
-    qImg: "./img/specimens/05-thylacinus-q.png?v=1",
-    aImg: "./img/specimens/05-thylacinus-a-crop.png?v=1",
-    hintImg: "./img/specimens/05-thylacinus-hint-crop.png?v=1",
-    mapImg: "./img/specimens/05-thylacinus-map.png?v=1",
+    qImg: "./img/specimens/05-thylacinus-q.webp?v=1",
+    aImg: "./img/specimens/05-thylacinus-a-crop.webp?v=1",
+    hintImg: "./img/specimens/05-thylacinus-hint-crop.webp?v=1",
+    mapImg: "./img/specimens/05-thylacinus-map.webp?v=1",
   },
   {
     code: "06.BVU-05",
@@ -188,10 +188,10 @@ const SPECIMENS = [
     habitat: "뉴질랜드",
     detail:
       "암컷의 복강 대비 알의 크기가 체중의 약 15-20%에 달한다. 인간으로 치면 6-7kg 짜리 아기를 낳는 것과 비슷한 비율이다. 알이 너무 커서 산란 직전 암컷은 먹이를 먹을 공간조차 없어 굶는 경우도 있다. 골반뼈가 이 거대한 알을 수용하기 위해 유달리 넓게 발달해 있다.",
-    qImg: "./img/specimens/06-apteryx-q.png?v=1",
-    aImg: "./img/specimens/06-apteryx-a-crop.png?v=1",
-    hintImg: "./img/specimens/06-apteryx-hint-crop.png?v=1",
-    mapImg: "./img/specimens/06-apteryx-map.png?v=1",
+    qImg: "./img/specimens/06-apteryx-q.webp?v=1",
+    aImg: "./img/specimens/06-apteryx-a-crop.webp?v=1",
+    hintImg: "./img/specimens/06-apteryx-hint-crop.webp?v=1",
+    mapImg: "./img/specimens/06-apteryx-map.webp?v=1",
   },
   {
     code: "07.BLC-03",
@@ -201,10 +201,10 @@ const SPECIMENS = [
     habitat: "유럽, 아시아 전역",
     detail:
       "눈구멍이 극도로 크고 앞을 향해 있어, 두개골 대비 눈이 차지하는 비율이 포유류와 비교할 수 없을 만큼 크다. 눈이 구형이 아닌 튜브형태로 안구가 고정되어 있어서 눈동자를 굴릴 수 없고, 대신 목을 270˚까지 돌릴 수 있는 경추 구조를 가지고 있다.",
-    qImg: "./img/specimens/07-bubobubo-q.png?v=1",
-    aImg: "./img/specimens/07-bubobubo-a-crop.png?v=1",
-    hintImg: "./img/specimens/07-bubobubo-hint-crop.png?v=1",
-    mapImg: "./img/specimens/07-bubobubo-map.png?v=1",
+    qImg: "./img/specimens/07-bubobubo-q.webp?v=1",
+    aImg: "./img/specimens/07-bubobubo-a-crop.webp?v=1",
+    hintImg: "./img/specimens/07-bubobubo-hint-crop.webp?v=1",
+    mapImg: "./img/specimens/07-bubobubo-map.webp?v=1",
   },
   {
     code: "08.BVU-05",
@@ -214,10 +214,10 @@ const SPECIMENS = [
     habitat: "동아시아[한국, 일본, 중국, 러시아]",
     detail:
       "두개골은 작고 가볍지만 부리는 길고 뾰족하게 발달해 있다. 이마 위의 붉은 정수리 부분은 뼈가 아니라 피부가 직접 노출된 나출부이다. 따라서 골격에는 나타나지 않는 특징이다.",
-    qImg: "./img/specimens/08-grusjaponensis-q.png?v=1",
-    aImg: "./img/specimens/08-grusjaponensis-a-crop.png?v=1",
-    hintImg: "./img/specimens/08-grusjaponensis-hint-crop.png?v=1",
-    mapImg: "./img/specimens/08-grusjaponensis-map.png?v=1",
+    qImg: "./img/specimens/08-grusjaponensis-q.webp?v=1",
+    aImg: "./img/specimens/08-grusjaponensis-a-crop.webp?v=1",
+    hintImg: "./img/specimens/08-grusjaponensis-hint-crop.webp?v=1",
+    mapImg: "./img/specimens/08-grusjaponensis-map.webp?v=1",
   },
   {
     code: "09.BEX-09",
@@ -227,10 +227,10 @@ const SPECIMENS = [
     habitat: "모리셔스 섬",
     detail:
       "날개뼈 자체는 남아있으나, 극도로 퇴화되어있다. 날개 길이가 몸에 비해 매우 짧고, 비행에 필요한 근육이 붙을 자리가 없다. 날개뼈는 비행보다 균형유지나 구애 행동에 사용된 것으로 추정된다.",
-    qImg: "./img/specimens/09-raphuscucullatus-q.png?v=1",
-    aImg: "./img/specimens/09-raphuscucullatus-a-crop.png?v=1",
-    hintImg: "./img/specimens/09-raphuscucullatus-hint-crop.png?v=1",
-    mapImg: "./img/specimens/09-raphuscucullatus-map.png?v=1",
+    qImg: "./img/specimens/09-raphuscucullatus-q.webp?v=1",
+    aImg: "./img/specimens/09-raphuscucullatus-a-crop.webp?v=1",
+    hintImg: "./img/specimens/09-raphuscucullatus-hint-crop.webp?v=1",
+    mapImg: "./img/specimens/09-raphuscucullatus-map.webp?v=1",
   },
   {
     code: "10.RLC-03",
@@ -240,10 +240,10 @@ const SPECIMENS = [
     habitat: "동남아시아",
     detail:
       "각각의 척추뼈는 4개의 관절돌기로 연결되어있다. 400-600개의 관절이 있고, 일반 척추동물의 척추뼈가 2개의 관절돌기로 연결되는 것과 달리, 이 표본은 4개로 연결되어 더 강인하면서도 유연한 구조이다. 각 척추뼈에 갈비뼈 한 쌍이 붙어 있어 척추뼈 수 만큼 갈비뼈 쌍도 존재한다. 갈비뼈 끝이 흉골에 연결되지 않고 자유롭게 열려 있어 흉곽이 먹이를 감쌀 때 자유롭게 확장된다.",
-    qImg: "./img/specimens/10-malayopython-q.png?v=1",
-    aImg: "./img/specimens/10-malayopython-a-crop.png?v=1",
-    hintImg: "./img/specimens/10-malayopython-hint-crop.png?v=1",
-    mapImg: "./img/specimens/10-malayopython-map.png?v=1",
+    qImg: "./img/specimens/10-malayopython-q.webp?v=1",
+    aImg: "./img/specimens/10-malayopython-a-crop.webp?v=1",
+    hintImg: "./img/specimens/10-malayopython-hint-crop.webp?v=1",
+    mapImg: "./img/specimens/10-malayopython-map.webp?v=1",
   },
   {
     code: "11.RLC-03",
@@ -253,10 +253,10 @@ const SPECIMENS = [
     habitat: "한국, 중국, 일본, 대만",
     detail:
       "척추뼈가 등딱지 안쪽 면에 완전히 융합되어 있다. 목뼈와 꼬리뼈만 자유롭게 움직일 수 있다. 남생이를 포함한 잠경아목 거북류는 목을 수직 S자로 접어 안쪽으로 집어 넣을 수 있다. 이를 가능하게 하는 경추 구조가 매우 유연하게 발달되어 있다. 일반적인 척추동물의 갈비뼈는 가늘고 둥굴게 휘어져있지만, 거북의 갈비뼈는 납작하게 펼쳐진 판 형태로 변형되어 있다. 이 판들이 서로 맞닿아 등딱지의 골격층을 형성한다.",
-    qImg: "./img/specimens/11-mauremys-q.png?v=1",
-    aImg: "./img/specimens/11-mauremys-a-crop.png?v=1",
-    hintImg: "./img/specimens/11-mauremys-hint-crop.png?v=1",
-    mapImg: "./img/specimens/11-mauremys-map.png?v=1",
+    qImg: "./img/specimens/11-mauremys-q.webp?v=1",
+    aImg: "./img/specimens/11-mauremys-a-crop.webp?v=1",
+    hintImg: "./img/specimens/11-mauremys-hint-crop.webp?v=1",
+    mapImg: "./img/specimens/11-mauremys-map.webp?v=1",
   },
   {
     code: "12.REN-06",
@@ -266,10 +266,10 @@ const SPECIMENS = [
     habitat: "인도네시아 코모도, 린카, 플로레스 섬",
     detail:
       "포유류와 달리 흉골이 없다. 갈비뼈가 복부까지 이어지는 복늑골이 있고, 이 뼈들이 내장을 보호한다. 폐가 매우 커서 산소 저장 능력이 뛰어나고, 격렬한 활동 후 빠르게 회복할 수 있다.",
-    qImg: "./img/specimens/12-varanuskomodoensis-q.png?v=1",
-    aImg: "./img/specimens/12-varanuskomodoensis-a-crop.png?v=1",
-    hintImg: "./img/specimens/12-varanuskomodoensis-hint-crop.png?v=1",
-    mapImg: "./img/specimens/12-varanuskomodoensis-map.png?v=1",
+    qImg: "./img/specimens/12-varanuskomodoensis-q.webp?v=1",
+    aImg: "./img/specimens/12-varanuskomodoensis-a-crop.webp?v=1",
+    hintImg: "./img/specimens/12-varanuskomodoensis-hint-crop.webp?v=1",
+    mapImg: "./img/specimens/12-varanuskomodoensis-map.webp?v=1",
   },
   {
     code: "13.ACR-07",
@@ -279,10 +279,10 @@ const SPECIMENS = [
     habitat: "멕시코 소치밀코 호수",
     detail:
       "사지를 절단해도 완전히 재생된다. 단순히 피부만 재생되는 것이 아닌 뼈, 연골, 근육, 신경, 혈관까지 원래와 동일하게 재생된다. 재생된 사지의 뼈는 처음에는 연골로 형성된 후 점차 골화가 진행된다. 재생 속도는 손상 정도에 따라 다르지만 다리 하나를 완전히 재생하는 데 약 수 주에서 수 개월이 걸린다.",
-    qImg: "./img/specimens/13-ambystoma-q.png?v=1",
-    aImg: "./img/specimens/13-ambystoma-a-crop.png?v=1",
-    hintImg: "./img/specimens/13-ambystoma-hint-crop.png?v=1",
-    mapImg: "./img/specimens/13-ambystoma-map.png?v=1",
+    qImg: "./img/specimens/13-ambystoma-q.webp?v=1",
+    aImg: "./img/specimens/13-ambystoma-a-crop.webp?v=1",
+    hintImg: "./img/specimens/13-ambystoma-hint-crop.webp?v=1",
+    mapImg: "./img/specimens/13-ambystoma-map.webp?v=1",
   },
   {
     code: "14.ACR-07",
@@ -292,10 +292,10 @@ const SPECIMENS = [
     habitat: "중국 중부 및 남부 산악 하천",
     detail:
       "두개골이 극도로 납작하고 넓적한 형태이다. 현대 양서류보다 훨씬 원시적인 두개골 구조로, 고생대 양서류 화석과 유사한 형태를 보인다. 눈구멍이 매우 작고 두개골 위쪽에 위치해 있다. 시력이 극도로 퇴화한 대신 피부 전체로 진동과 수압 변화를 감지하는 능력이 발달하였다. 턱뼈뿐만 아니라 구개골에도 이빨이 나있다. 이빨이 작고 원뿔형이며 여러 줄로 배열되어 있다. 미끄러운 물고기와 갑각류를 놓치지 않고 잡기 위한 구조이다. 이빨 구조 자체가 고생대 양서류와 매우 유사하다.",
-    qImg: "./img/specimens/14-andrias-q.png?v=1",
-    aImg: "./img/specimens/14-andrias-a-crop.png?v=1",
-    hintImg: "./img/specimens/14-andrias-hint-crop.png?v=1",
-    mapImg: "./img/specimens/14-andrias-map.png?v=1",
+    qImg: "./img/specimens/14-andrias-q.webp?v=1",
+    aImg: "./img/specimens/14-andrias-a-crop.webp?v=1",
+    hintImg: "./img/specimens/14-andrias-hint-crop.webp?v=1",
+    mapImg: "./img/specimens/14-andrias-map.webp?v=1",
   },
   {
     code: "15.AEN-06",
@@ -305,10 +305,10 @@ const SPECIMENS = [
     habitat: "서아프리카 카메룬, 적도기니",
     detail:
       "뒷다리뼈가 몸통보다 훨씬 길고 강인하게 발달해있다. 대퇴골, 경골, 비골이 차례로 이어지며 접혔다가 폭발적으로 펴지는 구조이다. 개구리류는 발목뼈인 거골과 종골이 길게 늘어나 추가적인 다리분절로 기능한다. 즉 인간의 발목에 해당하는 뼈가 개구리에서는 하나의 다리처럼 길게 뻗어 있다. 덕분에 실질적인 도약 구간이 더 길어진다. 이 구조로 최대 3m 이상 도약이 가능하다.",
-    qImg: "./img/specimens/15-conraua-q.png?v=1",
-    aImg: "./img/specimens/15-conraua-a-crop.png?v=1",
-    hintImg: "./img/specimens/15-conraua-hint-crop.png?v=1",
-    mapImg: "./img/specimens/15-conraua-map.png?v=1",
+    qImg: "./img/specimens/15-conraua-q.webp?v=1",
+    aImg: "./img/specimens/15-conraua-a-crop.webp?v=1",
+    hintImg: "./img/specimens/15-conraua-hint-crop.webp?v=1",
+    mapImg: "./img/specimens/15-conraua-map.webp?v=1",
   },
   {
     code: "16.FLC-03",
@@ -318,10 +318,10 @@ const SPECIMENS = [
     habitat: "북미 미시시피강 유역, 멕시코만 연안",
     detail:
       "가노인 비늘은 단순한 피부 구조가 아니다. 비늘 아래 진피골층이 발달해있어, 비늘과 피부, 뼈가 연속적인 구조를 이루고 있다. 이 구조 전체가 회골격에 가까운 방어 체계를 형성한다. 비늘의 경도가 매우 높아 일반 칼로는 자르기 어려운 수준이다.",
-    qImg: "./img/specimens/16-atractosteus-q.png?v=1",
-    aImg: "./img/specimens/16-atractosteus-a-crop.png?v=1",
-    hintImg: "./img/specimens/16-atractosteus-hint-crop.png?v=1",
-    mapImg: "./img/specimens/16-atractosteus-map.png?v=1",
+    qImg: "./img/specimens/16-atractosteus-q.webp?v=1",
+    aImg: "./img/specimens/16-atractosteus-a-crop.webp?v=1",
+    hintImg: "./img/specimens/16-atractosteus-hint-crop.webp?v=1",
+    mapImg: "./img/specimens/16-atractosteus-map.webp?v=1",
   },
   {
     code: "17.FVU-05",
@@ -331,10 +331,10 @@ const SPECIMENS = [
     habitat: "북미 대서양 연안",
     detail:
       "꼬리뼈의 단면이 정사각형이다. 대부분의 동물 꼬리는 원형 단면이지만, 이 표본은 꼬리 척추를 감싸는 뼈관이 정사각형으로 배열되어있다.",
-    qImg: "./img/specimens/17-hippocampus-q.png?v=1",
-    aImg: "./img/specimens/17-hippocampus-a-crop.png?v=1",
-    hintImg: "./img/specimens/17-hippocampus-hint-crop.png?v=1",
-    mapImg: "./img/specimens/17-hippocampus-map.png?v=1",
+    qImg: "./img/specimens/17-hippocampus-q.webp?v=1",
+    aImg: "./img/specimens/17-hippocampus-a-crop.webp?v=1",
+    hintImg: "./img/specimens/17-hippocampus-hint-crop.webp?v=1",
+    mapImg: "./img/specimens/17-hippocampus-map.webp?v=1",
   },
   {
     code: "18.FCR-07",
@@ -344,10 +344,10 @@ const SPECIMENS = [
     habitat: "북미 미시시피강, 미주리강 유역",
     detail:
       "이름의 유래 그대로 주둥이가 삽 모양으로 납작하고 넓게 발달해 있다. 주둥이를 구성하는 연골이 앞으로 뻗어 납작한 삽 형태를 이루고 있다. 이 구조로 강바닥을 훑으며 먹이를 찾는 데 특화되어 있다. 주둥이 아랫면에는 4개의 수염이 달려있다. 수염 안에 감각들이 집중되어 있으며, 이 수염으로 탁한 물속 강바닥의 먹이를 감지한다. 두개골 자체는 연골로 구성되어 있으며 포유류나 경골어류처럼 봉합된 단단한 두개골이 아니다. 두개골 전체가 하나의 연골 덩어리에 가까운 구조이다.",
-    qImg: "./img/specimens/18-scaphirhynchus-q.png?v=1",
-    aImg: "./img/specimens/18-scaphirhynchus-a-crop.png?v=1",
-    hintImg: "./img/specimens/18-scaphirhynchus-hint-crop.png?v=1",
-    mapImg: "./img/specimens/18-scaphirhynchus-map.png?v=1",
+    qImg: "./img/specimens/18-scaphirhynchus-q.webp?v=1",
+    aImg: "./img/specimens/18-scaphirhynchus-a-crop.webp?v=1",
+    hintImg: "./img/specimens/18-scaphirhynchus-hint-crop.webp?v=1",
+    mapImg: "./img/specimens/18-scaphirhynchus-map.webp?v=1",
   },
 ];
 
