@@ -1859,7 +1859,11 @@ img {
   text-align: center;
   text-wrap: balance;
   font-family: var(--font-body-kr);
-  font-size: clamp(14.0px, 0.85cqw, 19.0px);
+  /* 2560px(27인치 아이맥 기준) 화면에서 22px 정도로 보이도록 상한을
+     19px에서 22px로 올렸습니다. cqw 기준이 되는 .scene의 좌우 패딩
+     (34px 48px)만큼 빠진 실제 콘텐츠 박스 너비(2560px 화면일 때
+     2464px)로 계산했습니다. */
+  font-size: clamp(14.0px, 0.89cqw, 22.0px);
   color: var(--paper);
 }
 .quiz-feedback.is-wrong {
