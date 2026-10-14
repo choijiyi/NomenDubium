@@ -1887,27 +1887,33 @@ img {
           mask: url("../img/wrong-alert.png") center / contain no-repeat;
 }
 .quiz-feedback.is-wrong {
-  animation: quiz-feedback-toast 2.4s ease forwards;
+  animation: quiz-feedback-toast 2.4s linear forwards;
 }
-/* 0~29%: 상자 전체가 아래에서 살짝 떠오르며 나타남 (약 0.7초)
-   29~71%: 제자리에서 잠깐 머무름 (약 1초)
+/* 등장은 "삐빅!" 하고 튀어 오르듯 빠릿하게, 머무는 시간과 사라지는
+   시점(1.7초부터 페이드, 2.4초에 완전히 사라짐)은 그대로 둡니다.
+   0~8%: 약 0.19초 만에 아래에서 튀어 오르며 나타남 — 살짝 위로
+         넘쳤다가(오버슈트) 제자리에 박히는 cubic-bezier
+   8~71%: 제자리에서 머무름
    71~100%: 움직임 없이 서서히 사라짐 (약 0.7초) */
 @keyframes quiz-feedback-toast {
   0% {
     opacity: 0;
-    transform: translate(-50%, calc(-50% + 20px));
+    transform: translate(-50%, calc(-50% + 20px)) scale(0.94);
+    animation-timing-function: cubic-bezier(0.2, 1.6, 0.4, 1);
   }
-  29% {
+  8% {
     opacity: 1;
-    transform: translate(-50%, -50%);
+    transform: translate(-50%, -50%) scale(1);
+    animation-timing-function: linear;
   }
   71% {
     opacity: 1;
-    transform: translate(-50%, -50%);
+    transform: translate(-50%, -50%) scale(1);
+    animation-timing-function: ease;
   }
   100% {
     opacity: 0;
-    transform: translate(-50%, -50%);
+    transform: translate(-50%, -50%) scale(1);
   }
 }
 @media (prefers-reduced-motion: reduce) {
