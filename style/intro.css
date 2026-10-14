@@ -1852,9 +1852,9 @@ img {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: clamp(8.0px, 0.5cqw, 13.0px);
+  gap: clamp(10.0px, 0.6cqw, 15.0px);
   width: max-content;
-  padding: clamp(16.0px, 1.0cqw, 26.0px) clamp(22.0px, 1.4cqw, 34.0px);
+  padding: clamp(20.0px, 1.2cqw, 30.0px) clamp(28.0px, 1.7cqw, 42.0px);
   border-radius: 4px;
   background: var(--blood);
   opacity: 0;
@@ -1866,11 +1866,11 @@ img {
   text-align: center;
   text-wrap: balance;
   font-family: var(--font-body-kr);
-  /* 2560px(27인치 아이맥 기준) 화면에서 22px 정도로 보이도록 상한을
-     19px에서 22px로 올렸습니다. cqw 기준이 되는 .scene의 좌우 패딩
-     (34px 48px)만큼 빠진 실제 콘텐츠 박스 너비(2560px 화면일 때
-     2464px)로 계산했습니다. */
-  font-size: clamp(14.0px, 0.89cqw, 22.0px);
+  /* 2560px(27인치 아이맥 기준) 화면에서 28px 정도로 보이도록 상한을
+     22px에서 28px로 올렸습니다(선택지 버튼 글자 약 23.7px보다 한눈에
+     크게). cqw 기준이 되는 .scene의 좌우 패딩(34px 48px)만큼 빠진
+     실제 콘텐츠 박스 너비(2560px 화면일 때 2464px)로 계산했습니다. */
+  font-size: clamp(17.0px, 1.14cqw, 28.0px);
   color: var(--paper);
 }
 /* 경고 아이콘 — 원본 PNG(흰색 거친 질감의 삼각형 느낌표)를 마스크로
@@ -1878,7 +1878,7 @@ img {
    맞췄습니다. 원본 비율 240×211을 유지합니다. */
 .quiz-feedback-icon {
   display: block;
-  width: clamp(34.0px, 2.0cqw, 50.0px);
+  width: clamp(42.0px, 2.55cqw, 63.0px);
   aspect-ratio: 240 / 211;
   background-color: var(--paper);
   -webkit-mask: url("../img/wrong-alert.png") center / contain no-repeat;
